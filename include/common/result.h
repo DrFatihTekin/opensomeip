@@ -90,7 +90,8 @@ std::string to_string(Result result);
  * @param result The result code to check
  * @return true if result is SUCCESS, false otherwise
  */
-inline bool is_success(Result result) {
+inline bool is_success(Result result)
+{
     return result == Result::SUCCESS;
 }
 
@@ -99,10 +100,11 @@ inline bool is_success(Result result) {
  * @param result The result code to check
  * @return true if result is an error, false otherwise
  */
-inline bool is_error(Result result) {
+inline bool is_error(Result result)
+{
     return result != Result::SUCCESS;
 }
 
-} // namespace someip
+}  // namespace someip
 
-#endif // SOMEIP_COMMON_RESULT_H
+#endif  // SOMEIP_COMMON_RESULT_H

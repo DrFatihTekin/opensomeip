@@ -14,12 +14,12 @@
 #ifndef SOMEIP_EVENTS_TYPES_H
 #define SOMEIP_EVENTS_TYPES_H
 
-#include <cstdint>
-#include <vector>
-#include <memory>
-#include <functional>
 #include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace someip {
 namespace events {
@@ -29,8 +29,8 @@ namespace events {
  */
 enum class Reliability : uint8_t {
     UNKNOWN,
-    UNRELIABLE,      // UDP-based, best-effort delivery
-    RELIABLE         // TCP-based, guaranteed delivery
+    UNRELIABLE,  // UDP-based, best-effort delivery
+    RELIABLE     // TCP-based, guaranteed delivery
 };
 
 /**
@@ -38,10 +38,10 @@ enum class Reliability : uint8_t {
  */
 enum class NotificationType : uint8_t {
     UNKNOWN,
-    PERIODIC,        // Regular periodic notifications
-    ON_CHANGE,       // Notifications when value changes
+    PERIODIC,               // Regular periodic notifications
+    ON_CHANGE,              // Notifications when value changes
     ON_CHANGE_WITH_FILTER,  // Notifications with filter criteria
-    POLLING          // Client polls for updates
+    POLLING                 // Client polls for updates
 };
 
 /**
@@ -60,13 +60,7 @@ enum class EventResult : uint8_t {
 /**
  * @brief Event subscription state
  */
-enum class SubscriptionState : uint8_t {
-    REQUESTED,
-    SUBSCRIBED,
-    PENDING,
-    REJECTED,
-    EXPIRED
-};
+enum class SubscriptionState : uint8_t { REQUESTED, SUBSCRIBED, PENDING, REJECTED, EXPIRED };
 
 /**
  * @brief Event subscription information
@@ -82,8 +76,10 @@ struct EventSubscription {
     std::chrono::milliseconds cycle_time{0};  // For periodic events
     std::chrono::steady_clock::time_point last_notification{std::chrono::steady_clock::now()};
 
-    EventSubscription(uint16_t svc_id = 0, uint16_t inst_id = 0, uint16_t evt_id = 0, uint16_t eg_id = 0)
-        : service_id(svc_id), instance_id(inst_id), event_id(evt_id), eventgroup_id(eg_id) {
+    EventSubscription(uint16_t svc_id = 0, uint16_t inst_id = 0, uint16_t evt_id = 0,
+                      uint16_t eg_id = 0)
+        : service_id(svc_id), instance_id(inst_id), event_id(evt_id), eventgroup_id(eg_id)
+    {
         last_notification = std::chrono::steady_clock::now();
     }
 };
@@ -101,7 +97,8 @@ struct EventNotification {
     std::chrono::steady_clock::time_point timestamp{std::chrono::steady_clock::now()};
 
     EventNotification(uint16_t svc_id = 0, uint16_t inst_id = 0, uint16_t evt_id = 0)
-        : service_id(svc_id), instance_id(inst_id), event_id(evt_id) {
+        : service_id(svc_id), instance_id(inst_id), event_id(evt_id)
+    {
         timestamp = std::chrono::steady_clock::now();
     }
 };
@@ -115,7 +112,7 @@ struct EventConfig {
     Reliability reliability{Reliability::UNKNOWN};
     NotificationType notification_type{NotificationType::UNKNOWN};
     std::chrono::milliseconds cycle_time{1000};  // Default 1 second
-    bool is_field{false};  // true for fields, false for events
+    bool is_field{false};                        // true for fields, false for events
     std::string event_name;
 };
 
@@ -125,7 +122,8 @@ struct EventConfig {
 struct EventFilter {
     uint16_t event_id;
     std::vector<uint8_t> filter_data;
-    bool operator==(const EventFilter& other) const {
+    bool operator==(const EventFilter& other) const
+    {
         return event_id == other.event_id && filter_data == other.filter_data;
     }
 };
@@ -140,13 +138,13 @@ using SubscriptionStatusCallback = std::function<void(uint16_t event_id, Subscri
  * @brief Event publication policies
  */
 enum class PublicationPolicy : uint8_t {
-    IMMEDIATE,      // Publish immediately when value changes
-    CYCLIC,         // Publish at regular intervals
-    ON_REQUEST,     // Publish only when requested
-    TRIGGERED       // Publish when triggered by external event
+    IMMEDIATE,   // Publish immediately when value changes
+    CYCLIC,      // Publish at regular intervals
+    ON_REQUEST,  // Publish only when requested
+    TRIGGERED    // Publish when triggered by external event
 };
 
-} // namespace events
-} // namespace someip
+}  // namespace events
+}  // namespace someip
 
-#endif // SOMEIP_EVENTS_TYPES_H
+#endif  // SOMEIP_EVENTS_TYPES_H

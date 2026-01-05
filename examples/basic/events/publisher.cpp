@@ -22,17 +22,16 @@
  * This demonstrates the fundamental event publishing pattern.
  */
 
-#include <iostream>
-#include <thread>
+#include <atomic>
 #include <chrono>
 #include <csignal>
-#include <atomic>
-#include <random>
-#include <iomanip>
 #include <cstring>
-
 #include <events/event_publisher.h>
 #include <events/event_types.h>
+#include <iomanip>
+#include <iostream>
+#include <random>
+#include <thread>
 
 using namespace someip;
 using namespace someip::events;
@@ -48,16 +47,20 @@ const uint16_t SENSOR_EVENTGROUP_ID = 0x0001;
 // Global flag for graceful shutdown
 std::atomic<bool> running{true};
 
-void signal_handler(int signal) {
+void signal_handler(int signal)
+{
     std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
     running = false;
 }
 
 class SensorPublisher {
-public:
-    SensorPublisher() : publisher_(SENSOR_SERVICE_ID, 0x0001) {}
+   public:
+    SensorPublisher() : publisher_(SENSOR_SERVICE_ID, 0x0001)
+    {
+    }
 
-    bool initialize() {
+    bool initialize()
+    {
         // Create event configurations
         EventConfig temp_config;
         temp_config.event_id = TEMPERATURE_EVENT_ID;
@@ -89,23 +92,27 @@ public:
             return false;
         }
 
-        std::cout << "Sensor Publisher initialized for service 0x" << std::hex << SENSOR_SERVICE_ID << std::endl;
+        std::cout << "Sensor Publisher initialized for service 0x" << std::hex << SENSOR_SERVICE_ID
+                  << std::endl;
         std::cout << "Publishing events:" << std::endl;
-        std::cout << "  - Temperature (ID: 0x" << std::hex << TEMPERATURE_EVENT_ID << ") every 2 seconds" << std::endl;
-        std::cout << "  - Speed (ID: 0x" << std::hex << SPEED_EVENT_ID << ") every 1.5 seconds" << std::endl;
+        std::cout << "  - Temperature (ID: 0x" << std::hex << TEMPERATURE_EVENT_ID
+                  << ") every 2 seconds" << std::endl;
+        std::cout << "  - Speed (ID: 0x" << std::hex << SPEED_EVENT_ID << ") every 1.5 seconds"
+                  << std::endl;
 
         return true;
     }
 
-    void run() {
+    void run()
+    {
         std::cout << "\nSensor Publisher running. Press Ctrl+C to exit." << std::endl;
         std::cout << "Publishing sensor data..." << std::endl;
 
         // Initialize random number generator for realistic sensor data
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<> temp_dist(15.0, 35.0);  // Temperature: 15-35°C
-        std::uniform_real_distribution<> speed_dist(0.0, 120.0); // Speed: 0-120 km/h
+        std::uniform_real_distribution<> temp_dist(15.0, 35.0);   // Temperature: 15-35°C
+        std::uniform_real_distribution<> speed_dist(0.0, 120.0);  // Speed: 0-120 km/h
 
         auto last_temp_time = std::chrono::steady_clock::now();
         auto last_speed_time = std::chrono::steady_clock::now();
@@ -130,7 +137,8 @@ public:
                 if (publisher_.publish_event(TEMPERATURE_EVENT_ID, temp_data)) {
                     std::cout << "📊 Published Temperature: " << std::fixed << std::setprecision(1)
                               << temperature << "°C" << std::endl;
-                } else {
+                }
+                else {
                     std::cout << "❌ Failed to publish temperature event" << std::endl;
                 }
 
@@ -154,7 +162,8 @@ public:
                 if (publisher_.publish_event(SPEED_EVENT_ID, speed_data)) {
                     std::cout << "🚗 Published Speed: " << std::fixed << std::setprecision(1)
                               << speed << " km/h" << std::endl;
-                } else {
+                }
+                else {
                     std::cout << "❌ Failed to publish speed event" << std::endl;
                 }
 
@@ -168,11 +177,12 @@ public:
         std::cout << "Sensor Publisher shut down." << std::endl;
     }
 
-private:
+   private:
     EventPublisher publisher_;
 };
 
-int main() {
+int main()
+{
     // Setup signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);

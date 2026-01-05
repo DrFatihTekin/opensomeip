@@ -14,10 +14,11 @@
 #ifndef SOMEIP_MESSAGE_H
 #define SOMEIP_MESSAGE_H
 
-#include "someip/types.h"
-#include <vector>
-#include <memory>
 #include <chrono>
+#include <memory>
+#include <vector>
+
+#include "someip/types.h"
 
 namespace someip {
 
@@ -28,7 +29,7 @@ namespace someip {
  * It provides serialization/deserialization capabilities and safety checks.
  */
 class Message {
-public:
+   public:
     /**
      * @brief Constructor for creating a new message
      */
@@ -67,44 +68,121 @@ public:
     ~Message() = default;
 
     // Header field accessors
-    MessageId get_message_id() const { return message_id_; }
-    void set_message_id(MessageId id) { message_id_ = id; }
+    MessageId get_message_id() const
+    {
+        return message_id_;
+    }
+    void set_message_id(MessageId id)
+    {
+        message_id_ = id;
+    }
 
-    uint32_t get_length() const { return length_; }
-    void set_length(uint32_t length) { length_ = length; }
+    uint32_t get_length() const
+    {
+        return length_;
+    }
+    void set_length(uint32_t length)
+    {
+        length_ = length;
+    }
 
-    RequestId get_request_id() const { return request_id_; }
-    void set_request_id(RequestId id) { request_id_ = id; }
+    RequestId get_request_id() const
+    {
+        return request_id_;
+    }
+    void set_request_id(RequestId id)
+    {
+        request_id_ = id;
+    }
 
-    uint8_t get_protocol_version() const { return protocol_version_; }
-    void set_protocol_version(uint8_t version) { protocol_version_ = version; }
+    uint8_t get_protocol_version() const
+    {
+        return protocol_version_;
+    }
+    void set_protocol_version(uint8_t version)
+    {
+        protocol_version_ = version;
+    }
 
-    uint8_t get_interface_version() const { return interface_version_; }
-    void set_interface_version(uint8_t version) { interface_version_ = version; }
+    uint8_t get_interface_version() const
+    {
+        return interface_version_;
+    }
+    void set_interface_version(uint8_t version)
+    {
+        interface_version_ = version;
+    }
 
-    MessageType get_message_type() const { return message_type_; }
-    void set_message_type(MessageType type) { message_type_ = type; }
+    MessageType get_message_type() const
+    {
+        return message_type_;
+    }
+    void set_message_type(MessageType type)
+    {
+        message_type_ = type;
+    }
 
-    ReturnCode get_return_code() const { return return_code_; }
-    void set_return_code(ReturnCode code) { return_code_ = code; }
+    ReturnCode get_return_code() const
+    {
+        return return_code_;
+    }
+    void set_return_code(ReturnCode code)
+    {
+        return_code_ = code;
+    }
 
     // Payload accessors
-    const std::vector<uint8_t>& get_payload() const { return payload_; }
-    void set_payload(const std::vector<uint8_t>& payload) { payload_ = payload; update_length(); }
-    void set_payload(std::vector<uint8_t>&& payload) { payload_ = std::move(payload); update_length(); }
+    const std::vector<uint8_t>& get_payload() const
+    {
+        return payload_;
+    }
+    void set_payload(const std::vector<uint8_t>& payload)
+    {
+        payload_ = payload;
+        update_length();
+    }
+    void set_payload(std::vector<uint8_t>&& payload)
+    {
+        payload_ = std::move(payload);
+        update_length();
+    }
 
     // Service and method ID convenience accessors
-    uint16_t get_service_id() const { return message_id_.service_id; }
-    void set_service_id(uint16_t service_id) { message_id_.service_id = service_id; }
+    uint16_t get_service_id() const
+    {
+        return message_id_.service_id;
+    }
+    void set_service_id(uint16_t service_id)
+    {
+        message_id_.service_id = service_id;
+    }
 
-    uint16_t get_method_id() const { return message_id_.method_id; }
-    void set_method_id(uint16_t method_id) { message_id_.method_id = method_id; }
+    uint16_t get_method_id() const
+    {
+        return message_id_.method_id;
+    }
+    void set_method_id(uint16_t method_id)
+    {
+        message_id_.method_id = method_id;
+    }
 
-    uint16_t get_client_id() const { return request_id_.client_id; }
-    void set_client_id(uint16_t client_id) { request_id_.client_id = client_id; }
+    uint16_t get_client_id() const
+    {
+        return request_id_.client_id;
+    }
+    void set_client_id(uint16_t client_id)
+    {
+        request_id_.client_id = client_id;
+    }
 
-    uint16_t get_session_id() const { return request_id_.session_id; }
-    void set_session_id(uint16_t session_id) { request_id_.session_id = session_id; }
+    uint16_t get_session_id() const
+    {
+        return request_id_.session_id;
+    }
+    void set_session_id(uint16_t session_id)
+    {
+        request_id_.session_id = session_id;
+    }
 
     // Serialization methods
     std::vector<uint8_t> serialize() const;
@@ -116,29 +194,53 @@ public:
     bool has_valid_payload() const;
 
     // Utility methods
-    size_t get_total_size() const { return HEADER_SIZE + payload_.size(); }
-    static size_t get_header_size() { return HEADER_SIZE; }
-    bool is_request() const { return someip::is_request(message_type_); }
-    bool is_response() const { return someip::is_response(message_type_); }
-    bool uses_tp() const { return someip::uses_tp(message_type_); }
-    bool is_success() const { return someip::is_success(return_code_); }
+    size_t get_total_size() const
+    {
+        return HEADER_SIZE + payload_.size();
+    }
+    static size_t get_header_size()
+    {
+        return HEADER_SIZE;
+    }
+    bool is_request() const
+    {
+        return someip::is_request(message_type_);
+    }
+    bool is_response() const
+    {
+        return someip::is_response(message_type_);
+    }
+    bool uses_tp() const
+    {
+        return someip::uses_tp(message_type_);
+    }
+    bool is_success() const
+    {
+        return someip::is_success(return_code_);
+    }
 
     // Timestamp for diagnostics
-    std::chrono::steady_clock::time_point get_timestamp() const { return timestamp_; }
-    void update_timestamp() { timestamp_ = std::chrono::steady_clock::now(); }
+    std::chrono::steady_clock::time_point get_timestamp() const
+    {
+        return timestamp_;
+    }
+    void update_timestamp()
+    {
+        timestamp_ = std::chrono::steady_clock::now();
+    }
 
     // String representation for debugging
     std::string to_string() const;
 
-private:
+   private:
     // Header fields (16 bytes total)
-    MessageId message_id_;           // 4 bytes
-    uint32_t length_;                // 4 bytes (includes 8-byte header)
-    RequestId request_id_;           // 4 bytes
-    uint8_t protocol_version_;       // 1 byte
-    uint8_t interface_version_;      // 1 byte
-    MessageType message_type_;       // 1 byte
-    ReturnCode return_code_;         // 1 byte
+    MessageId message_id_;       // 4 bytes
+    uint32_t length_;            // 4 bytes (includes 8-byte header)
+    RequestId request_id_;       // 4 bytes
+    uint8_t protocol_version_;   // 1 byte
+    uint8_t interface_version_;  // 1 byte
+    MessageType message_type_;   // 1 byte
+    ReturnCode return_code_;     // 1 byte
 
     // Payload
     std::vector<uint8_t> payload_;
@@ -149,8 +251,8 @@ private:
     // Constants
     static constexpr size_t HEADER_SIZE = 16;
     static constexpr size_t MIN_MESSAGE_SIZE = HEADER_SIZE;
-    static constexpr size_t DEFAULT_MAX_PAYLOAD_SIZE = 1400; // Ethernet MTU minus headers
-    static constexpr size_t MAX_TCP_PAYLOAD_SIZE = 65535; // Much larger for TCP
+    static constexpr size_t DEFAULT_MAX_PAYLOAD_SIZE = 1400;  // Ethernet MTU minus headers
+    static constexpr size_t MAX_TCP_PAYLOAD_SIZE = 65535;     // Much larger for TCP
 
     // Helper methods
     void update_length();
@@ -162,6 +264,6 @@ private:
 using MessagePtr = std::shared_ptr<Message>;
 using MessageConstPtr = std::shared_ptr<const Message>;
 
-} // namespace someip
+}  // namespace someip
 
-#endif // SOMEIP_MESSAGE_H
+#endif  // SOMEIP_MESSAGE_H

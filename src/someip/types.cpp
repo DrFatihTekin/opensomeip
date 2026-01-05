@@ -12,11 +12,13 @@
  ********************************************************************************/
 
 #include "someip/types.h"
+
 #include <unordered_map>
 
 namespace someip {
 
-std::string to_string(MessageType type) {
+std::string to_string(MessageType type)
+{
     static const std::unordered_map<MessageType, std::string> type_strings = {
         {MessageType::REQUEST, "REQUEST"},
         {MessageType::REQUEST_NO_RETURN, "REQUEST_NO_RETURN"},
@@ -28,14 +30,14 @@ std::string to_string(MessageType type) {
         {MessageType::ERROR_ACK, "ERROR_ACK"},
         {MessageType::TP_REQUEST, "TP_REQUEST"},
         {MessageType::TP_REQUEST_NO_RETURN, "TP_REQUEST_NO_RETURN"},
-        {MessageType::TP_NOTIFICATION, "TP_NOTIFICATION"}
-    };
+        {MessageType::TP_NOTIFICATION, "TP_NOTIFICATION"}};
 
     auto it = type_strings.find(type);
     return (it != type_strings.end()) ? it->second : "UNKNOWN_MESSAGE_TYPE";
 }
 
-std::string to_string(ReturnCode code) {
+std::string to_string(ReturnCode code)
+{
     static const std::unordered_map<ReturnCode, std::string> code_strings = {
         {ReturnCode::E_OK, "E_OK"},
         {ReturnCode::E_NOT_OK, "E_NOT_OK"},
@@ -52,34 +54,32 @@ std::string to_string(ReturnCode code) {
         {ReturnCode::E_E2E_WRONG_SEQUENCE, "E_E2E_WRONG_SEQUENCE"},
         {ReturnCode::E_E2E, "E_E2E"},
         {ReturnCode::E_E2E_NOT_AVAILABLE, "E_E2E_NOT_AVAILABLE"},
-        {ReturnCode::E_E2E_NO_NEW_DATA, "E_E2E_NO_NEW_DATA"}
-    };
+        {ReturnCode::E_E2E_NO_NEW_DATA, "E_E2E_NO_NEW_DATA"}};
 
     auto it = code_strings.find(code);
     return (it != code_strings.end()) ? it->second : "UNKNOWN_RETURN_CODE";
 }
 
-bool is_request(MessageType type) {
-    return type == MessageType::REQUEST ||
-           type == MessageType::REQUEST_NO_RETURN ||
-           type == MessageType::TP_REQUEST ||
-           type == MessageType::TP_REQUEST_NO_RETURN;
+bool is_request(MessageType type)
+{
+    return type == MessageType::REQUEST || type == MessageType::REQUEST_NO_RETURN ||
+           type == MessageType::TP_REQUEST || type == MessageType::TP_REQUEST_NO_RETURN;
 }
 
-bool is_response(MessageType type) {
-    return type == MessageType::RESPONSE ||
-           type == MessageType::ERROR ||
-           type == MessageType::RESPONSE_ACK ||
-           type == MessageType::ERROR_ACK;
+bool is_response(MessageType type)
+{
+    return type == MessageType::RESPONSE || type == MessageType::ERROR ||
+           type == MessageType::RESPONSE_ACK || type == MessageType::ERROR_ACK;
 }
 
-bool uses_tp(MessageType type) {
-    return type == MessageType::TP_REQUEST ||
-           type == MessageType::TP_REQUEST_NO_RETURN ||
+bool uses_tp(MessageType type)
+{
+    return type == MessageType::TP_REQUEST || type == MessageType::TP_REQUEST_NO_RETURN ||
            type == MessageType::TP_NOTIFICATION;
 }
 
-MessageType get_ack_type(MessageType type) {
+MessageType get_ack_type(MessageType type)
+{
     switch (type) {
         case MessageType::REQUEST:
             return MessageType::REQUEST_ACK;
@@ -88,12 +88,13 @@ MessageType get_ack_type(MessageType type) {
         case MessageType::ERROR:
             return MessageType::ERROR_ACK;
         default:
-            return type; // No ACK variant
+            return type;  // No ACK variant
     }
 }
 
-bool is_success(ReturnCode code) {
+bool is_success(ReturnCode code)
+{
     return code == ReturnCode::E_OK;
 }
 
-} // namespace someip
+}  // namespace someip

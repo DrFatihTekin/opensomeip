@@ -23,16 +23,15 @@
  * This shows advanced SOME/IP serialization patterns.
  */
 
-#include <iostream>
-#include <thread>
-#include <chrono>
-#include <vector>
 #include <array>
-#include <string>
-
+#include <chrono>
+#include <iostream>
 #include <rpc/rpc_client.h>
 #include <rpc/rpc_types.h>
 #include <serialization/serializer.h>
+#include <string>
+#include <thread>
+#include <vector>
 
 using namespace someip;
 using namespace someip::rpc;
@@ -48,10 +47,10 @@ const uint16_t ECHO_COMPLEX_STRUCT_METHOD_ID = 0x0003;
 struct VehicleData {
     uint32_t vehicle_id;
     std::string model;
-    float fuel_level;      // 0.0 - 1.0
-    uint8_t tire_pressure[4]; // 4 tires
+    float fuel_level;          // 0.0 - 1.0
+    uint8_t tire_pressure[4];  // 4 tires
     bool lights_on;
-    uint16_t mileage;      // km
+    uint16_t mileage;  // km
 };
 
 struct SensorReading {
@@ -67,10 +66,13 @@ struct SensorArray {
 };
 
 class ComplexTypesClient {
-public:
-    ComplexTypesClient() : client_(0xABCD) {}  // Client ID
+   public:
+    ComplexTypesClient() : client_(0xABCD)
+    {
+    }  // Client ID
 
-    bool initialize() {
+    bool initialize()
+    {
         if (!client_.initialize()) {
             std::cerr << "Failed to initialize RPC client" << std::endl;
             return false;
@@ -80,7 +82,8 @@ public:
         return true;
     }
 
-    void run_demonstrations() {
+    void run_demonstrations()
+    {
         std::cout << "\n=== Complex Types Demonstrations ===" << std::endl;
 
         // Test 1: Process vehicle data (struct serialization)
@@ -95,16 +98,18 @@ public:
         std::cout << "\n=== All Demonstrations Completed ===" << std::endl;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         client_.shutdown();
         std::cout << "Complex Types Client shut down." << std::endl;
     }
 
-private:
+   private:
     RpcClient client_;
 
     // Serialization helpers (same as server)
-    std::vector<uint8_t> serialize_vehicle_data(const VehicleData& data) {
+    std::vector<uint8_t> serialize_vehicle_data(const VehicleData& data)
+    {
         Serializer serializer;
         serializer.serialize_uint32(data.vehicle_id);
         serializer.serialize_string(data.model);
@@ -117,7 +122,8 @@ private:
         return serializer.get_buffer();
     }
 
-    std::vector<uint8_t> serialize_sensor_reading(const SensorReading& data) {
+    std::vector<uint8_t> serialize_sensor_reading(const SensorReading& data)
+    {
         Serializer serializer;
         serializer.serialize_uint8(data.sensor_id);
         serializer.serialize_float(data.value);
@@ -126,23 +132,27 @@ private:
         return serializer.get_buffer();
     }
 
-    DeserializationResult<std::string> deserialize_string(Deserializer& deserializer) {
+    DeserializationResult<std::string> deserialize_string(Deserializer& deserializer)
+    {
         return deserializer.deserialize_string();
     }
 
-    DeserializationResult<SensorArray> deserialize_sensor_array(Deserializer& deserializer) {
+    DeserializationResult<SensorArray> deserialize_sensor_array(Deserializer& deserializer)
+    {
         SensorArray data;
 
         // First get array size
         auto array_size = deserializer.deserialize_uint32();
-        if (array_size.is_error()) return DeserializationResult<SensorArray>::error(array_size.get_error());
+        if (array_size.is_error())
+            return DeserializationResult<SensorArray>::error(array_size.get_error());
         data.array_size = array_size.get_value();
 
         // Then deserialize each sensor
         for (uint32_t i = 0; i < data.array_size; ++i) {
             // Get sensor data length (and skip it, since we don't need it)
             auto sensor_length = deserializer.deserialize_uint32();
-            if (sensor_length.is_error()) return DeserializationResult<SensorArray>::error(sensor_length.get_error());
+            if (sensor_length.is_error())
+                return DeserializationResult<SensorArray>::error(sensor_length.get_error());
 
             // Deserialize sensor data directly
             auto sensor_id = deserializer.deserialize_uint8();
@@ -150,45 +160,43 @@ private:
             auto unit = deserializer.deserialize_string();
             auto timestamp = deserializer.deserialize_uint32();
 
-            if (sensor_id.is_error() || value.is_error() || unit.is_error() || timestamp.is_error()) {
-                return DeserializationResult<SensorArray>::error(sensor_id.is_error() ? sensor_id.get_error() :
-                        value.is_error() ? value.get_error() :
-                        unit.is_error() ? unit.get_error() : timestamp.get_error());
+            if (sensor_id.is_error() || value.is_error() || unit.is_error() ||
+                timestamp.is_error()) {
+                return DeserializationResult<SensorArray>::error(
+                    sensor_id.is_error() ? sensor_id.get_error()
+                    : value.is_error()   ? value.get_error()
+                    : unit.is_error()    ? unit.get_error()
+                                         : timestamp.get_error());
             }
 
-            SensorReading sensor = {
-                sensor_id.get_value(),
-                value.get_value(),
-                unit.get_value(),
-                timestamp.get_value()
-            };
+            SensorReading sensor = {sensor_id.get_value(), value.get_value(), unit.get_value(),
+                                    timestamp.get_value()};
             data.sensors.push_back(sensor);
         }
 
         return DeserializationResult<SensorArray>::success(data);
     }
 
-    void test_vehicle_data_processing() {
+    void test_vehicle_data_processing()
+    {
         std::cout << "\n--- Test 1: Vehicle Data Processing ---" << std::endl;
 
         // Create sample vehicle data
         VehicleData vehicle = {
-            12345,                    // vehicle_id
-            "Tesla Model S",         // model
-            0.85f,                   // fuel_level (85%)
-            {32, 33, 31, 34},       // tire_pressure (PSI)
-            true,                    // lights_on
-            45230                    // mileage (km)
+            12345,             // vehicle_id
+            "Tesla Model S",   // model
+            0.85f,             // fuel_level (85%)
+            {32, 33, 31, 34},  // tire_pressure (PSI)
+            true,              // lights_on
+            45230              // mileage (km)
         };
 
         std::cout << "Sending vehicle data:" << std::endl;
         std::cout << "  ID: " << vehicle.vehicle_id << std::endl;
         std::cout << "  Model: " << vehicle.model << std::endl;
         std::cout << "  Fuel Level: " << (vehicle.fuel_level * 100) << "%" << std::endl;
-        std::cout << "  Tire Pressure: "
-                  << (int)vehicle.tire_pressure[0] << ", "
-                  << (int)vehicle.tire_pressure[1] << ", "
-                  << (int)vehicle.tire_pressure[2] << ", "
+        std::cout << "  Tire Pressure: " << (int)vehicle.tire_pressure[0] << ", "
+                  << (int)vehicle.tire_pressure[1] << ", " << (int)vehicle.tire_pressure[2] << ", "
                   << (int)vehicle.tire_pressure[3] << " PSI" << std::endl;
         std::cout << "  Lights: " << (vehicle.lights_on ? "ON" : "OFF") << std::endl;
         std::cout << "  Mileage: " << vehicle.mileage << " km" << std::endl;
@@ -196,8 +204,8 @@ private:
         // Serialize and send
         std::vector<uint8_t> parameters = serialize_vehicle_data(vehicle);
 
-        RpcSyncResult result = client_.call_method_sync(
-            COMPLEX_SERVICE_ID, PROCESS_VEHICLE_DATA_METHOD_ID, parameters);
+        RpcSyncResult result = client_.call_method_sync(COMPLEX_SERVICE_ID,
+                                                        PROCESS_VEHICLE_DATA_METHOD_ID, parameters);
 
         if (result.result != RpcResult::SUCCESS) {
             std::cout << "RPC call failed: " << static_cast<int>(result.result) << std::endl;
@@ -217,14 +225,15 @@ private:
         std::cout << "✓ Vehicle data processing successful" << std::endl;
     }
 
-    void test_sensor_array_retrieval() {
+    void test_sensor_array_retrieval()
+    {
         std::cout << "\n--- Test 2: Sensor Array Retrieval ---" << std::endl;
 
         // No parameters needed
         std::vector<uint8_t> parameters;
 
-        RpcSyncResult result = client_.call_method_sync(
-            COMPLEX_SERVICE_ID, GET_SENSOR_ARRAY_METHOD_ID, parameters);
+        RpcSyncResult result =
+            client_.call_method_sync(COMPLEX_SERVICE_ID, GET_SENSOR_ARRAY_METHOD_ID, parameters);
 
         if (result.result != RpcResult::SUCCESS) {
             std::cout << "RPC call failed: " << static_cast<int>(result.result) << std::endl;
@@ -242,17 +251,18 @@ private:
 
         const SensorArray& sensor_array = sensor_array_result.get_value();
 
-        std::cout << "Received sensor array with " << sensor_array.sensors.size() << " readings:" << std::endl;
+        std::cout << "Received sensor array with " << sensor_array.sensors.size()
+                  << " readings:" << std::endl;
         for (const auto& sensor : sensor_array.sensors) {
-            std::cout << "  Sensor " << (int)sensor.sensor_id << ": "
-                      << sensor.value << " " << sensor.unit
-                      << " (timestamp: " << sensor.timestamp << ")" << std::endl;
+            std::cout << "  Sensor " << (int)sensor.sensor_id << ": " << sensor.value << " "
+                      << sensor.unit << " (timestamp: " << sensor.timestamp << ")" << std::endl;
         }
 
         std::cout << "✓ Sensor array retrieval successful" << std::endl;
     }
 
-    void test_complex_struct_echo() {
+    void test_complex_struct_echo()
+    {
         std::cout << "\n--- Test 3: Complex Struct Echo ---" << std::endl;
 
         // Create sample sensor reading
@@ -271,8 +281,8 @@ private:
         // Serialize and send
         std::vector<uint8_t> parameters = serialize_sensor_reading(sensor);
 
-        RpcSyncResult result = client_.call_method_sync(
-            COMPLEX_SERVICE_ID, ECHO_COMPLEX_STRUCT_METHOD_ID, parameters);
+        RpcSyncResult result =
+            client_.call_method_sync(COMPLEX_SERVICE_ID, ECHO_COMPLEX_STRUCT_METHOD_ID, parameters);
 
         if (result.result != RpcResult::SUCCESS) {
             std::cout << "RPC call failed: " << static_cast<int>(result.result) << std::endl;
@@ -298,17 +308,17 @@ private:
         std::cout << "  Timestamp: " << timestamp.get_value() << std::endl;
 
         // Verify round-trip
-        bool match = (sensor_id.get_value() == sensor.sensor_id &&
-                     value.get_value() == sensor.value &&
-                     unit.get_value() == sensor.unit &&
-                     timestamp.get_value() == sensor.timestamp);
+        bool match =
+            (sensor_id.get_value() == sensor.sensor_id && value.get_value() == sensor.value &&
+             unit.get_value() == sensor.unit && timestamp.get_value() == sensor.timestamp);
 
         std::cout << "Round-trip verification: " << (match ? "✓ PASSED" : "❌ FAILED") << std::endl;
         std::cout << "✓ Complex struct echo successful" << std::endl;
     }
 };
 
-int main() {
+int main()
+{
     std::cout << "=== SOME/IP Complex Types Client ===" << std::endl;
     std::cout << std::endl;
 

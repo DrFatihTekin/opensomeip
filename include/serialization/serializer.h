@@ -14,11 +14,12 @@
 #ifndef SOMEIP_SERIALIZATION_SERIALIZER_H
 #define SOMEIP_SERIALIZATION_SERIALIZER_H
 
-#include <vector>
 #include <cstdint>
-#include <string>
 #include <memory>
 #include <optional>
+#include <string>
+#include <vector>
+
 #include "../common/result.h"
 
 namespace someip {
@@ -31,13 +32,14 @@ namespace serialization {
  * It either contains the successfully deserialized value, or indicates
  * an error condition (e.g., insufficient data).
  */
-template<typename T>
+template <typename T>
 class DeserializationResult {
-public:
+   public:
     /**
      * @brief Create a successful result with a value
      */
-    static DeserializationResult success(T value) {
+    static DeserializationResult success(T value)
+    {
         DeserializationResult result;
         result.value_ = std::move(value);
         result.error_ = Result::SUCCESS;
@@ -47,7 +49,8 @@ public:
     /**
      * @brief Create an error result
      */
-    static DeserializationResult error(Result error_code) {
+    static DeserializationResult error(Result error_code)
+    {
         DeserializationResult result;
         result.error_ = error_code;
         return result;
@@ -56,39 +59,44 @@ public:
     /**
      * @brief Check if the operation was successful
      */
-    bool is_success() const {
+    bool is_success() const
+    {
         return error_ == Result::SUCCESS;
     }
 
     /**
      * @brief Check if the operation failed
      */
-    bool is_error() const {
+    bool is_error() const
+    {
         return error_ != Result::SUCCESS;
     }
 
     /**
      * @brief Get the error code (only valid if is_error() returns true)
      */
-    Result get_error() const {
+    Result get_error() const
+    {
         return error_;
     }
 
     /**
      * @brief Get the value (only valid if is_success() returns true)
      */
-    const T& get_value() const {
+    const T& get_value() const
+    {
         return value_.value();
     }
 
     /**
      * @brief Get the value with move semantics (only valid if is_success() returns true)
      */
-    T&& move_value() {
+    T&& move_value()
+    {
         return std::move(value_.value());
     }
 
-private:
+   private:
     std::optional<T> value_;
     Result error_;
 };
@@ -100,7 +108,7 @@ private:
  * following the SOME/IP serialization rules (big-endian, aligned).
  */
 class Serializer {
-public:
+   public:
     /**
      * @brief Constructor
      */
@@ -131,19 +139,28 @@ public:
     void serialize_string(const std::string& value);
 
     // Array serialization
-    template<typename T>
+    template <typename T>
     void serialize_array(const std::vector<T>& array);
 
     // Get serialized data
-    const std::vector<uint8_t>& get_buffer() const { return buffer_; }
-    std::vector<uint8_t>&& move_buffer() { return std::move(buffer_); }
-    size_t get_size() const { return buffer_.size(); }
+    const std::vector<uint8_t>& get_buffer() const
+    {
+        return buffer_;
+    }
+    std::vector<uint8_t>&& move_buffer()
+    {
+        return std::move(buffer_);
+    }
+    size_t get_size() const
+    {
+        return buffer_.size();
+    }
 
     // Utility methods
     void align_to(size_t alignment);
     void add_padding(size_t bytes);
 
-private:
+   private:
     std::vector<uint8_t> buffer_;
 
     // Helper methods for endianness conversion
@@ -164,7 +181,7 @@ private:
  * following the SOME/IP serialization rules.
  */
 class Deserializer {
-public:
+   public:
     /**
      * @brief Constructor
      * @param data The data to deserialize from
@@ -202,20 +219,29 @@ public:
     DeserializationResult<std::string> deserialize_string();
 
     // Array deserialization
-    template<typename T>
+    template <typename T>
     DeserializationResult<std::vector<T>> deserialize_array(size_t length);
 
     // Status and navigation
-    bool is_valid() const { return position_ <= buffer_.size(); }
-    size_t get_position() const { return position_; }
-    size_t get_remaining() const { return buffer_.size() - position_; }
+    bool is_valid() const
+    {
+        return position_ <= buffer_.size();
+    }
+    size_t get_position() const
+    {
+        return position_;
+    }
+    size_t get_remaining() const
+    {
+        return buffer_.size() - position_;
+    }
     bool set_position(size_t pos);
     void skip(size_t bytes);
 
     // Utility methods
     void align_to(size_t alignment);
 
-private:
+   private:
     std::vector<uint8_t> buffer_;
     size_t position_;
 
@@ -232,8 +258,9 @@ private:
 
 // Template implementations (must be in header)
 
-template<typename T>
-void Serializer::serialize_array(const std::vector<T>& array) {
+template <typename T>
+void Serializer::serialize_array(const std::vector<T>& array)
+{
     // Serialize array length as uint32_t
     serialize_uint32(static_cast<uint32_t>(array.size()));
 
@@ -241,37 +268,50 @@ void Serializer::serialize_array(const std::vector<T>& array) {
     for (const auto& element : array) {
         if constexpr (std::is_same_v<T, bool>) {
             serialize_bool(element);
-        } else if constexpr (std::is_same_v<T, uint8_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint8_t>) {
             serialize_uint8(element);
-        } else if constexpr (std::is_same_v<T, uint16_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint16_t>) {
             serialize_uint16(element);
-        } else if constexpr (std::is_same_v<T, uint32_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint32_t>) {
             serialize_uint32(element);
-        } else if constexpr (std::is_same_v<T, uint64_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint64_t>) {
             serialize_uint64(element);
-        } else if constexpr (std::is_same_v<T, int8_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int8_t>) {
             serialize_int8(element);
-        } else if constexpr (std::is_same_v<T, int16_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int16_t>) {
             serialize_int16(element);
-        } else if constexpr (std::is_same_v<T, int32_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int32_t>) {
             serialize_int32(element);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int64_t>) {
             serialize_int64(element);
-        } else if constexpr (std::is_same_v<T, float>) {
+        }
+        else if constexpr (std::is_same_v<T, float>) {
             serialize_float(element);
-        } else if constexpr (std::is_same_v<T, double>) {
+        }
+        else if constexpr (std::is_same_v<T, double>) {
             serialize_double(element);
-        } else if constexpr (std::is_same_v<T, std::string>) {
+        }
+        else if constexpr (std::is_same_v<T, std::string>) {
             serialize_string(element);
-        } else {
+        }
+        else {
             // For complex types, static_assert will catch this at compile time
             static_assert(sizeof(T) == 0, "Unsupported array element type for serialization");
         }
     }
 }
 
-template<typename T>
-DeserializationResult<std::vector<T>> Deserializer::deserialize_array(size_t length) {
+template <typename T>
+DeserializationResult<std::vector<T>> Deserializer::deserialize_array(size_t length)
+{
     std::vector<T> result;
     result.reserve(length);
 
@@ -280,29 +320,41 @@ DeserializationResult<std::vector<T>> Deserializer::deserialize_array(size_t len
 
         if constexpr (std::is_same_v<T, bool>) {
             element_result = deserialize_bool();
-        } else if constexpr (std::is_same_v<T, uint8_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint8_t>) {
             element_result = deserialize_uint8();
-        } else if constexpr (std::is_same_v<T, uint16_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint16_t>) {
             element_result = deserialize_uint16();
-        } else if constexpr (std::is_same_v<T, uint32_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint32_t>) {
             element_result = deserialize_uint32();
-        } else if constexpr (std::is_same_v<T, uint64_t>) {
+        }
+        else if constexpr (std::is_same_v<T, uint64_t>) {
             element_result = deserialize_uint64();
-        } else if constexpr (std::is_same_v<T, int8_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int8_t>) {
             element_result = deserialize_int8();
-        } else if constexpr (std::is_same_v<T, int16_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int16_t>) {
             element_result = deserialize_int16();
-        } else if constexpr (std::is_same_v<T, int32_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int32_t>) {
             element_result = deserialize_int32();
-        } else if constexpr (std::is_same_v<T, int64_t>) {
+        }
+        else if constexpr (std::is_same_v<T, int64_t>) {
             element_result = deserialize_int64();
-        } else if constexpr (std::is_same_v<T, float>) {
+        }
+        else if constexpr (std::is_same_v<T, float>) {
             element_result = deserialize_float();
-        } else if constexpr (std::is_same_v<T, double>) {
+        }
+        else if constexpr (std::is_same_v<T, double>) {
             element_result = deserialize_double();
-        } else if constexpr (std::is_same_v<T, std::string>) {
+        }
+        else if constexpr (std::is_same_v<T, std::string>) {
             element_result = deserialize_string();
-        } else {
+        }
+        else {
             // For complex types, static_assert will catch this at compile time
             static_assert(sizeof(T) == 0, "Unsupported array element type for deserialization");
         }
@@ -317,7 +369,7 @@ DeserializationResult<std::vector<T>> Deserializer::deserialize_array(size_t len
     return DeserializationResult<std::vector<T>>::success(std::move(result));
 }
 
-} // namespace serialization
-} // namespace someip
+}  // namespace serialization
+}  // namespace someip
 
-#endif // SOMEIP_SERIALIZATION_SERIALIZER_H
+#endif  // SOMEIP_SERIALIZATION_SERIALIZER_H

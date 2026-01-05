@@ -14,10 +14,11 @@
 #ifndef SOMEIP_TP_REASSEMBLER_H
 #define SOMEIP_TP_REASSEMBLER_H
 
-#include "tp_types.h"
-#include <unordered_map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
+
+#include "tp_types.h"
 
 namespace someip {
 namespace tp {
@@ -29,7 +30,7 @@ namespace tp {
  * Handles out-of-order delivery and duplicate segments.
  */
 class TpReassembler {
-public:
+   public:
     /**
      * @brief Constructor
      * @param config TP configuration
@@ -72,7 +73,8 @@ public:
      * @param total_bytes Total expected bytes (output)
      * @return true if message found, false otherwise
      */
-    bool get_reassembly_progress(uint32_t message_id, uint32_t& received_bytes, uint32_t& total_bytes) const;
+    bool get_reassembly_progress(uint32_t message_id, uint32_t& received_bytes,
+                                 uint32_t& total_bytes) const;
 
     /**
      * @brief Cancel reassembly for a message
@@ -101,7 +103,7 @@ public:
      */
     void update_config(const TpConfig& config);
 
-private:
+   private:
     TpConfig config_;
     std::unordered_map<uint32_t, std::unique_ptr<TpReassemblyBuffer>> reassembly_buffers_;
     mutable std::mutex config_mutex_;
@@ -115,8 +117,7 @@ private:
     void cleanup_timed_out_buffers(const TpConfig& config);
 };
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip
 
-#endif // SOMEIP_TP_REASSEMBLER_H
-
+#endif  // SOMEIP_TP_REASSEMBLER_H

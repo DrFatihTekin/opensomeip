@@ -12,18 +12,19 @@
  ********************************************************************************/
 
 #include <gtest/gtest.h>
-#include <tp/tp_manager.h>
-#include <tp/tp_segmenter.h>
-#include <tp/tp_reassembler.h>
 #include <someip/message.h>
 #include <thread>
+#include <tp/tp_manager.h>
+#include <tp/tp_reassembler.h>
+#include <tp/tp_segmenter.h>
 
 using namespace someip;
 using namespace someip::tp;
 
 class TpTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         config.max_segment_size = 512;  // Small for testing
         config.max_message_size = 10000;
         config.reassembly_timeout = std::chrono::milliseconds(1000);
@@ -32,13 +33,14 @@ protected:
     TpConfig config;
 };
 
-TEST_F(TpTest, SingleSegmentMessage) {
+TEST_F(TpTest, SingleSegmentMessage)
+{
     TpManager tp_manager(config);
     ASSERT_TRUE(tp_manager.initialize());
 
     // Create small message that fits in one segment
-    Message message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001),
-                   MessageType::REQUEST, ReturnCode::E_OK);
+    Message message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001), MessageType::REQUEST,
+                    ReturnCode::E_OK);
     std::vector<uint8_t> small_payload(256, 0xAA);
     message.set_payload(small_payload);
 
@@ -63,14 +65,15 @@ TEST_F(TpTest, SingleSegmentMessage) {
     tp_manager.shutdown();
 }
 
-TEST_F(TpTest, MultiSegmentMessage) {
+TEST_F(TpTest, MultiSegmentMessage)
+{
     TpManager tp_manager(config);
     ASSERT_TRUE(tp_manager.initialize());
 
     // Create large message that needs segmentation
-    Message message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001),
-                   MessageType::REQUEST, ReturnCode::E_OK);
-    std::vector<uint8_t> large_payload(1500, 0xBB); // Larger than segment size
+    Message message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001), MessageType::REQUEST,
+                    ReturnCode::E_OK);
+    std::vector<uint8_t> large_payload(1500, 0xBB);  // Larger than segment size
     message.set_payload(large_payload);
 
     // Should need segmentation
@@ -114,13 +117,14 @@ TEST_F(TpTest, MultiSegmentMessage) {
     tp_manager.shutdown();
 }
 
-TEST_F(TpTest, MessageReassembly) {
+TEST_F(TpTest, MessageReassembly)
+{
     TpManager tp_manager(config);
     ASSERT_TRUE(tp_manager.initialize());
 
     // Create large message
     Message original_message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001),
-                            MessageType::REQUEST, ReturnCode::E_OK);
+                             MessageType::REQUEST, ReturnCode::E_OK);
     std::vector<uint8_t> original_payload(1024, 0xCC);
     original_message.set_payload(original_payload);
 
@@ -167,7 +171,8 @@ TEST_F(TpTest, MessageReassembly) {
 
 // Out-of-order reassembly and duplicate handling are tested in MessageReassembly
 
-TEST_F(TpTest, TimeoutHandling) {
+TEST_F(TpTest, TimeoutHandling)
+{
     TpConfig short_timeout_config = config;
     short_timeout_config.reassembly_timeout = std::chrono::milliseconds(100);
 
@@ -199,14 +204,15 @@ TEST_F(TpTest, TimeoutHandling) {
     ASSERT_FALSE(reassembler.is_reassembling(1));
 }
 
-TEST_F(TpTest, InvalidSegmentHandling) {
+TEST_F(TpTest, InvalidSegmentHandling)
+{
     TpReassembler reassembler(config);
 
     // Create invalid segment (offset + length > message_length)
     TpSegment invalid_seg;
     invalid_seg.header.message_length = 500;
     invalid_seg.header.segment_offset = 300;
-    invalid_seg.header.segment_length = 300; // 300 + 300 = 600 > 500
+    invalid_seg.header.segment_length = 300;  // 300 + 300 = 600 > 500
     invalid_seg.header.sequence_number = 1;
     invalid_seg.header.message_type = TpMessageType::CONSECUTIVE_SEGMENT;
     invalid_seg.payload.assign(300, 0x22);
@@ -215,13 +221,14 @@ TEST_F(TpTest, InvalidSegmentHandling) {
     ASSERT_FALSE(reassembler.process_segment(invalid_seg, complete_message));
 }
 
-TEST_F(TpTest, StatisticsTracking) {
+TEST_F(TpTest, StatisticsTracking)
+{
     TpManager tp_manager(config);
     ASSERT_TRUE(tp_manager.initialize());
 
     // Create and segment a message
-    Message message(MessageId(0x1111, 0x2222), RequestId(0x3333, 0x4444),
-                   MessageType::REQUEST, ReturnCode::E_OK);
+    Message message(MessageId(0x1111, 0x2222), RequestId(0x3333, 0x4444), MessageType::REQUEST,
+                    ReturnCode::E_OK);
     message.set_payload(std::vector<uint8_t>(800, 0x55));
 
     uint32_t transfer_id;

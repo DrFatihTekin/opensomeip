@@ -11,30 +11,34 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
-#include <gtest/gtest.h>
 #include <events/event_types.h>
+#include <gtest/gtest.h>
 
 using namespace someip::events;
 
 class EventsTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         // Setup code
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // Cleanup code
     }
 };
 
 // Test event types and enums
-TEST_F(EventsTest, ReliabilityTypes) {
+TEST_F(EventsTest, ReliabilityTypes)
+{
     EXPECT_EQ(static_cast<uint8_t>(Reliability::UNKNOWN), 0);
     EXPECT_EQ(static_cast<uint8_t>(Reliability::UNRELIABLE), 1);
     EXPECT_EQ(static_cast<uint8_t>(Reliability::RELIABLE), 2);
 }
 
-TEST_F(EventsTest, NotificationTypes) {
+TEST_F(EventsTest, NotificationTypes)
+{
     EXPECT_EQ(static_cast<uint8_t>(NotificationType::UNKNOWN), 0);
     EXPECT_EQ(static_cast<uint8_t>(NotificationType::PERIODIC), 1);
     EXPECT_EQ(static_cast<uint8_t>(NotificationType::ON_CHANGE), 2);
@@ -42,7 +46,8 @@ TEST_F(EventsTest, NotificationTypes) {
     EXPECT_EQ(static_cast<uint8_t>(NotificationType::POLLING), 4);
 }
 
-TEST_F(EventsTest, SubscriptionStates) {
+TEST_F(EventsTest, SubscriptionStates)
+{
     EXPECT_EQ(static_cast<uint8_t>(SubscriptionState::REQUESTED), 0);
     EXPECT_EQ(static_cast<uint8_t>(SubscriptionState::SUBSCRIBED), 1);
     EXPECT_EQ(static_cast<uint8_t>(SubscriptionState::PENDING), 2);
@@ -51,7 +56,8 @@ TEST_F(EventsTest, SubscriptionStates) {
 }
 
 // Test event configuration
-TEST_F(EventsTest, EventConfigConstruction) {
+TEST_F(EventsTest, EventConfigConstruction)
+{
     EventConfig config;
 
     EXPECT_EQ(config.event_id, 0u);
@@ -64,7 +70,8 @@ TEST_F(EventsTest, EventConfigConstruction) {
 }
 
 // Test event subscription
-TEST_F(EventsTest, EventSubscriptionConstruction) {
+TEST_F(EventsTest, EventSubscriptionConstruction)
+{
     EventSubscription subscription(0x1234, 0x0001, 0x8001, 0x0001);
 
     EXPECT_EQ(subscription.service_id, 0x1234u);
@@ -78,7 +85,8 @@ TEST_F(EventsTest, EventSubscriptionConstruction) {
 }
 
 // Test event notification
-TEST_F(EventsTest, EventNotificationConstruction) {
+TEST_F(EventsTest, EventNotificationConstruction)
+{
     EventNotification notification(0x1234, 0x0001, 0x8001);
 
     EXPECT_EQ(notification.service_id, 0x1234u);
@@ -90,7 +98,8 @@ TEST_F(EventsTest, EventNotificationConstruction) {
 }
 
 // Test event filter
-TEST_F(EventsTest, EventFilterComparison) {
+TEST_F(EventsTest, EventFilterComparison)
+{
     EventFilter filter1{0x8001, {0x01, 0x02}};
     EventFilter filter2{0x8001, {0x01, 0x02}};
     EventFilter filter3{0x8002, {0x01, 0x02}};
@@ -102,7 +111,8 @@ TEST_F(EventsTest, EventFilterComparison) {
 // Test publication policies (implicitly tested through enums above)
 
 // Test result codes
-TEST_F(EventsTest, EventResultCodes) {
+TEST_F(EventsTest, EventResultCodes)
+{
     EXPECT_EQ(static_cast<int>(EventResult::SUCCESS), 0);
     EXPECT_EQ(static_cast<int>(EventResult::EVENT_NOT_FOUND), 1);
     EXPECT_EQ(static_cast<int>(EventResult::SUBSCRIPTION_FAILED), 2);
@@ -112,7 +122,8 @@ TEST_F(EventsTest, EventResultCodes) {
 }
 
 // Test event configuration with different types
-TEST_F(EventsTest, EventConfigPeriodic) {
+TEST_F(EventsTest, EventConfigPeriodic)
+{
     EventConfig config;
     config.event_id = 0x8001;
     config.eventgroup_id = 0x0001;
@@ -129,7 +140,8 @@ TEST_F(EventsTest, EventConfigPeriodic) {
     EXPECT_EQ(config.event_name, "PeriodicSensor");
 }
 
-TEST_F(EventsTest, EventConfigOnChange) {
+TEST_F(EventsTest, EventConfigOnChange)
+{
     EventConfig config;
     config.event_id = 0x8002;
     config.eventgroup_id = 0x0001;
@@ -145,7 +157,8 @@ TEST_F(EventsTest, EventConfigOnChange) {
 }
 
 // Test event subscription state transitions
-TEST_F(EventsTest, SubscriptionStateTransitions) {
+TEST_F(EventsTest, SubscriptionStateTransitions)
+{
     EventSubscription subscription(0x1234, 0x0001, 0x8001, 0x0001);
 
     // Initial state
@@ -163,7 +176,8 @@ TEST_F(EventsTest, SubscriptionStateTransitions) {
 }
 
 // Test event notification data handling
-TEST_F(EventsTest, EventNotificationData) {
+TEST_F(EventsTest, EventNotificationData)
+{
     EventNotification notification(0x1234, 0x0001, 0x8001);
 
     std::vector<uint8_t> test_data = {0x01, 0x02, 0x03, 0x04, 0x05};
@@ -179,7 +193,8 @@ TEST_F(EventsTest, EventNotificationData) {
 }
 
 // Test event filter with different data
-TEST_F(EventsTest, EventFilterComplex) {
+TEST_F(EventsTest, EventFilterComplex)
+{
     EventFilter filter;
     filter.event_id = 0x8001;
     filter.filter_data = {0xFF, 0x00, 0xAA, 0x55};
@@ -193,7 +208,8 @@ TEST_F(EventsTest, EventFilterComplex) {
 // Test publication policy enum values (implicitly tested above)
 
 // Test that event configurations can be copied and compared
-TEST_F(EventsTest, EventConfigCopy) {
+TEST_F(EventsTest, EventConfigCopy)
+{
     EventConfig config1;
     config1.event_id = 0x8001;
     config1.eventgroup_id = 0x0001;

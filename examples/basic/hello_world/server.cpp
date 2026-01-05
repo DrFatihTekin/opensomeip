@@ -21,17 +21,16 @@
  * This is the most basic example showing core SOME/IP message handling.
  */
 
-#include <iostream>
-#include <thread>
+#include <atomic>
 #include <chrono>
 #include <csignal>
-#include <atomic>
 #include <cstdlib>
-#include <string>
-
-#include <transport/udp_transport.h>
-#include <transport/endpoint.h>
+#include <iostream>
 #include <someip/message.h>
+#include <string>
+#include <thread>
+#include <transport/endpoint.h>
+#include <transport/udp_transport.h>
 
 using namespace someip;
 using namespace someip::transport;
@@ -43,47 +42,52 @@ const uint16_t SAY_HELLO_METHOD_ID = 0x0001;
 // Global flag for graceful shutdown
 std::atomic<bool> running{true};
 
-void signal_handler(int signal) {
+void signal_handler(int signal)
+{
     std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
     running = false;
 }
 
 class HelloServer : public ITransportListener {
-public:
+   public:
     HelloServer(const std::string& host, uint16_t port)
-        : transport_(std::make_shared<UdpTransport>(Endpoint(host, port))) {
+        : transport_(std::make_shared<UdpTransport>(Endpoint(host, port)))
+    {
         transport_->set_listener(this);
     }
 
-    ~HelloServer() {
+    ~HelloServer()
+    {
         stop();
     }
 
-    bool start() {
+    bool start()
+    {
         if (transport_->start() != Result::SUCCESS) {
             std::cerr << "Failed to start transport" << std::endl;
             return false;
         }
 
-        std::cout << "Hello World Server started on " << transport_->get_local_endpoint().to_string() << std::endl;
+        std::cout << "Hello World Server started on "
+                  << transport_->get_local_endpoint().to_string() << std::endl;
         std::cout << "Waiting for 'Hello' messages..." << std::endl;
         return true;
     }
 
-    void stop() {
+    void stop()
+    {
         transport_->stop();
     }
 
     // ITransportListener implementation
-    void on_message_received(MessagePtr message, const Endpoint& sender) override {
+    void on_message_received(MessagePtr message, const Endpoint& sender) override
+    {
         std::cout << "Received message from " << sender.to_string() << std::endl;
         std::cout << "Message: " << message->to_string() << std::endl;
 
         // Check if this is a request to our service and method
         if (message->get_service_id() == HELLO_SERVICE_ID &&
-            message->get_method_id() == SAY_HELLO_METHOD_ID &&
-            message->is_request()) {
-
+            message->get_method_id() == SAY_HELLO_METHOD_ID && message->is_request()) {
             // Get the payload as string
             std::string received_text;
             if (!message->get_payload().empty()) {
@@ -94,9 +98,8 @@ public:
 
             // Create response message
             Message response(MessageId(HELLO_SERVICE_ID, SAY_HELLO_METHOD_ID),
-                           RequestId(message->get_client_id(), message->get_session_id()),
-                           MessageType::RESPONSE,
-                           ReturnCode::E_OK);
+                             RequestId(message->get_client_id(), message->get_session_id()),
+                             MessageType::RESPONSE, ReturnCode::E_OK);
 
             // Set response payload
             std::string greeting = "Hello World! Server received: " + received_text;
@@ -106,29 +109,35 @@ public:
             Result send_result = transport_->send_message(response, sender);
             if (send_result == Result::SUCCESS) {
                 std::cout << "Sent greeting: '" << greeting << "'" << std::endl;
-            } else {
-                std::cout << "Failed to send response: " << static_cast<int>(send_result) << std::endl;
+            }
+            else {
+                std::cout << "Failed to send response: " << static_cast<int>(send_result)
+                          << std::endl;
             }
         }
     }
 
-    void on_connection_lost(const Endpoint& endpoint) override {
+    void on_connection_lost(const Endpoint& endpoint) override
+    {
         std::cout << "Connection lost to " << endpoint.to_string() << std::endl;
     }
 
-    void on_connection_established(const Endpoint& endpoint) override {
+    void on_connection_established(const Endpoint& endpoint) override
+    {
         std::cout << "Connection established to " << endpoint.to_string() << std::endl;
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         std::cout << "Transport error: " << static_cast<int>(error) << std::endl;
     }
 
-private:
+   private:
     std::shared_ptr<UdpTransport> transport_;
 };
 
-int main() {
+int main()
+{
     // Setup signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
@@ -142,7 +151,8 @@ int main() {
     uint16_t bind_port = 30490;
     try {
         bind_port = static_cast<uint16_t>(std::stoi(get_env("HELLO_BIND_PORT", "30490")));
-    } catch (...) {
+    }
+    catch (...) {
         bind_port = 30490;
     }
 

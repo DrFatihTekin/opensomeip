@@ -17,7 +17,8 @@ namespace someip {
 
 SessionManager::SessionManager() = default;
 
-uint16_t SessionManager::create_session(uint16_t client_id) {
+uint16_t SessionManager::create_session(uint16_t client_id)
+{
     std::scoped_lock lock(sessions_mutex_);
 
     uint16_t session_id = get_next_session_id();
@@ -28,7 +29,8 @@ uint16_t SessionManager::create_session(uint16_t client_id) {
     return session_id;
 }
 
-std::shared_ptr<Session> SessionManager::get_session(uint16_t session_id) {
+std::shared_ptr<Session> SessionManager::get_session(uint16_t session_id)
+{
     std::scoped_lock lock(sessions_mutex_);
 
     auto it = sessions_.find(session_id);
@@ -39,13 +41,15 @@ std::shared_ptr<Session> SessionManager::get_session(uint16_t session_id) {
     return nullptr;
 }
 
-void SessionManager::remove_session(uint16_t session_id) {
+void SessionManager::remove_session(uint16_t session_id)
+{
     std::scoped_lock lock(sessions_mutex_);
 
     sessions_.erase(session_id);
 }
 
-bool SessionManager::validate_session(uint16_t session_id) {
+bool SessionManager::validate_session(uint16_t session_id)
+{
     std::scoped_lock lock(sessions_mutex_);
 
     auto it = sessions_.find(session_id);
@@ -56,7 +60,8 @@ bool SessionManager::validate_session(uint16_t session_id) {
     return it->second->state == SessionState::ACTIVE;
 }
 
-void SessionManager::update_session_activity(uint16_t session_id) {
+void SessionManager::update_session_activity(uint16_t session_id)
+{
     std::scoped_lock lock(sessions_mutex_);
 
     auto it = sessions_.find(session_id);
@@ -65,7 +70,8 @@ void SessionManager::update_session_activity(uint16_t session_id) {
     }
 }
 
-size_t SessionManager::cleanup_expired_sessions(std::chrono::seconds timeout) {
+size_t SessionManager::cleanup_expired_sessions(std::chrono::seconds timeout)
+{
     std::scoped_lock lock(sessions_mutex_);
 
     size_t cleaned_count = 0;
@@ -76,7 +82,8 @@ size_t SessionManager::cleanup_expired_sessions(std::chrono::seconds timeout) {
             it->second->state = SessionState::EXPIRED;
             it = sessions_.erase(it);
             cleaned_count++;
-        } else {
+        }
+        else {
             ++it;
         }
     }
@@ -84,7 +91,8 @@ size_t SessionManager::cleanup_expired_sessions(std::chrono::seconds timeout) {
     return cleaned_count;
 }
 
-uint16_t SessionManager::get_next_session_id() {
+uint16_t SessionManager::get_next_session_id()
+{
     // Find the next available session ID for this client
     // SOME/IP session IDs should not be 0
     uint16_t candidate = next_session_id_;
@@ -92,7 +100,7 @@ uint16_t SessionManager::get_next_session_id() {
     // Simple linear search for available ID (could be optimized)
     while (sessions_.find(candidate) != sessions_.end()) {
         candidate++;
-        if (candidate == 0) { // Wrap around, skip 0
+        if (candidate == 0) {  // Wrap around, skip 0
             candidate = 1;
         }
     }
@@ -105,7 +113,8 @@ uint16_t SessionManager::get_next_session_id() {
     return candidate;
 }
 
-size_t SessionManager::get_active_session_count() const {
+size_t SessionManager::get_active_session_count() const
+{
     std::scoped_lock lock(sessions_mutex_);
 
     size_t count = 0;
@@ -118,4 +127,4 @@ size_t SessionManager::get_active_session_count() const {
     return count;
 }
 
-} // namespace someip
+}  // namespace someip

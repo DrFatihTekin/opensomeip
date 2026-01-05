@@ -12,35 +12,40 @@
  ********************************************************************************/
 
 #include "transport/tcp_transport.h"
-#include "common/result.h"
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <cstring>
-#include <iostream>
+
 #include <algorithm>
+#include <arpa/inet.h>
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
+#include <fcntl.h>
+#include <iostream>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "common/result.h"
 
 namespace someip {
 namespace transport {
 
-TcpTransport::TcpTransport(const TcpTransportConfig& config)
-    : config_(config) {
+TcpTransport::TcpTransport(const TcpTransportConfig& config) : config_(config)
+{
 }
 
-TcpTransport::~TcpTransport() {
+TcpTransport::~TcpTransport()
+{
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall) - intentional cleanup
     stop();
 }
 
-Result TcpTransport::initialize(const Endpoint& local_endpoint) {
+Result TcpTransport::initialize(const Endpoint& local_endpoint)
+{
     // Create TCP-specific endpoint
-    local_endpoint_ = Endpoint(local_endpoint.get_address(), local_endpoint.get_port(), TransportProtocol::TCP);
+    local_endpoint_ =
+        Endpoint(local_endpoint.get_address(), local_endpoint.get_port(), TransportProtocol::TCP);
 
     // Create socket
     Result result = create_socket();
@@ -64,7 +69,8 @@ Result TcpTransport::initialize(const Endpoint& local_endpoint) {
     return Result::SUCCESS;
 }
 
-Result TcpTransport::send_message(const Message& message, const Endpoint& endpoint) {
+Result TcpTransport::send_message(const Message& message, const Endpoint& endpoint)
+{
     if (!is_connected()) {
         return Result::NOT_CONNECTED;
     }
@@ -84,7 +90,8 @@ Result TcpTransport::send_message(const Message& message, const Endpoint& endpoi
     return result;
 }
 
-MessagePtr TcpTransport::receive_message() {
+MessagePtr TcpTransport::receive_message()
+{
     std::scoped_lock lock(queue_mutex_);
     if (message_queue_.empty()) {
         return nullptr;
@@ -95,7 +102,8 @@ MessagePtr TcpTransport::receive_message() {
     return message;
 }
 
-Result TcpTransport::connect(const Endpoint& endpoint) {
+Result TcpTransport::connect(const Endpoint& endpoint)
+{
     if (is_connected()) {
         return Result::SUCCESS;  // Already connected
     }
@@ -107,7 +115,8 @@ Result TcpTransport::connect(const Endpoint& endpoint) {
     return connect_internal(endpoint);
 }
 
-Result TcpTransport::disconnect() {
+Result TcpTransport::disconnect()
+{
     if (!is_connected()) {
         return Result::SUCCESS;  // Already disconnected
     }
@@ -116,19 +125,23 @@ Result TcpTransport::disconnect() {
     return Result::SUCCESS;
 }
 
-bool TcpTransport::is_connected() const {
+bool TcpTransport::is_connected() const
+{
     return connection_.is_connected();
 }
 
-Endpoint TcpTransport::get_local_endpoint() const {
+Endpoint TcpTransport::get_local_endpoint() const
+{
     return local_endpoint_;
 }
 
-void TcpTransport::set_listener(ITransportListener* listener) {
+void TcpTransport::set_listener(ITransportListener* listener)
+{
     listener_ = listener;
 }
 
-Result TcpTransport::start() {
+Result TcpTransport::start()
+{
     if (running_) {
         return Result::SUCCESS;
     }
@@ -144,7 +157,8 @@ Result TcpTransport::start() {
     return Result::SUCCESS;
 }
 
-Result TcpTransport::stop() {
+Result TcpTransport::stop()
+{
     if (!running_) {
         return Result::SUCCESS;
     }
@@ -171,15 +185,18 @@ Result TcpTransport::stop() {
     return Result::SUCCESS;
 }
 
-bool TcpTransport::is_running() const {
+bool TcpTransport::is_running() const
+{
     return running_;
 }
 
-TcpConnectionState TcpTransport::get_connection_state() const {
+TcpConnectionState TcpTransport::get_connection_state() const
+{
     return connection_.state;
 }
 
-Result TcpTransport::enable_server_mode(int backlog) {
+Result TcpTransport::enable_server_mode(int backlog)
+{
     if (connection_.socket_fd == -1) {
         return Result::NOT_INITIALIZED;
     }
@@ -194,7 +211,8 @@ Result TcpTransport::enable_server_mode(int backlog) {
     return Result::SUCCESS;
 }
 
-int TcpTransport::accept_connection() {
+int TcpTransport::accept_connection()
+{
     if (!server_mode_ || listen_socket_fd_ == -1) {
         return -1;
     }
@@ -226,7 +244,8 @@ int TcpTransport::accept_connection() {
 
 // Private helper methods
 
-Result TcpTransport::create_socket() {
+Result TcpTransport::create_socket()
+{
     connection_.socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (connection_.socket_fd < 0) {
         return Result::NETWORK_ERROR;
@@ -236,7 +255,8 @@ Result TcpTransport::create_socket() {
     return setup_socket_options(connection_.socket_fd, false);
 }
 
-Result TcpTransport::bind_socket() {
+Result TcpTransport::bind_socket()
+{
     if (connection_.socket_fd == -1) {
         return Result::NOT_INITIALIZED;
     }
@@ -254,7 +274,8 @@ Result TcpTransport::bind_socket() {
     return Result::SUCCESS;
 }
 
-Result TcpTransport::setup_socket_options(int socket_fd, bool blocking) {
+Result TcpTransport::setup_socket_options(int socket_fd, bool blocking)
+{
     int flags = fcntl(socket_fd, F_GETFL, 0);
     if (flags < 0) {
         return Result::NETWORK_ERROR;
@@ -262,8 +283,9 @@ Result TcpTransport::setup_socket_options(int socket_fd, bool blocking) {
 
     if (blocking) {
         flags &= ~O_NONBLOCK;  // Clear non-blocking flag
-    } else {
-        flags |= O_NONBLOCK;   // Set non-blocking flag
+    }
+    else {
+        flags |= O_NONBLOCK;  // Set non-blocking flag
     }
 
     if (fcntl(socket_fd, F_SETFL, flags) < 0) {
@@ -277,12 +299,14 @@ Result TcpTransport::setup_socket_options(int socket_fd, bool blocking) {
         // macOS uses different socket option levels and names
         setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPALIVE, &keep_alive, sizeof(keep_alive));
         int keep_alive_interval = static_cast<int>(config_.keep_alive_interval.count() / 1000);
-        setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_alive_interval, sizeof(keep_alive_interval));
+        setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_alive_interval,
+                   sizeof(keep_alive_interval));
         setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_alive, sizeof(keep_alive));
 #else
         setsockopt(socket_fd, SOL_TCP, TCP_KEEPIDLE, &keep_alive, sizeof(keep_alive));
         int keep_alive_interval = static_cast<int>(config_.keep_alive_interval.count() / 1000);
-        setsockopt(socket_fd, SOL_TCP, TCP_KEEPINTVL, &keep_alive_interval, sizeof(keep_alive_interval));
+        setsockopt(socket_fd, SOL_TCP, TCP_KEEPINTVL, &keep_alive_interval,
+                   sizeof(keep_alive_interval));
         setsockopt(socket_fd, SOL_TCP, TCP_KEEPCNT, &keep_alive, sizeof(keep_alive));
 #endif
     }
@@ -290,20 +314,19 @@ Result TcpTransport::setup_socket_options(int socket_fd, bool blocking) {
     // Send/receive timeouts
     struct timeval send_timeout = {
         static_cast<time_t>(config_.send_timeout.count() / 1000),
-        static_cast<suseconds_t>((config_.send_timeout.count() % 1000) * 1000)
-    };
+        static_cast<suseconds_t>((config_.send_timeout.count() % 1000) * 1000)};
     setsockopt(socket_fd, SOL_SOCKET, SO_SNDTIMEO, &send_timeout, sizeof(send_timeout));
 
     struct timeval recv_timeout = {
         static_cast<time_t>(config_.receive_timeout.count() / 1000),
-        static_cast<suseconds_t>((config_.receive_timeout.count() % 1000) * 1000)
-    };
+        static_cast<suseconds_t>((config_.receive_timeout.count() % 1000) * 1000)};
     setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout));
 
     return Result::SUCCESS;
 }
 
-Result TcpTransport::connect_internal(const Endpoint& endpoint) {
+Result TcpTransport::connect_internal(const Endpoint& endpoint)
+{
     sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -325,7 +348,8 @@ Result TcpTransport::connect_internal(const Endpoint& endpoint) {
         }
 
         return Result::SUCCESS;
-    } else if (errno == EINPROGRESS) {
+    }
+    else if (errno == EINPROGRESS) {
         // Connection in progress - wait for completion
         fd_set write_fds;
         FD_ZERO(&write_fds);
@@ -333,8 +357,7 @@ Result TcpTransport::connect_internal(const Endpoint& endpoint) {
 
         struct timeval timeout = {
             static_cast<time_t>(config_.connection_timeout.count() / 1000),
-            static_cast<suseconds_t>((config_.connection_timeout.count() % 1000) * 1000)
-        };
+            static_cast<suseconds_t>((config_.connection_timeout.count() % 1000) * 1000)};
 
         connect_result = select(connection_.socket_fd + 1, nullptr, &write_fds, nullptr, &timeout);
 
@@ -359,14 +382,16 @@ Result TcpTransport::connect_internal(const Endpoint& endpoint) {
         // Connection failed
         disconnect_internal();
         return Result::NETWORK_ERROR;
-    } else {
+    }
+    else {
         // Immediate connection failure
         connection_.state = TcpConnectionState::DISCONNECTED;
         return Result::NETWORK_ERROR;
     }
 }
 
-void TcpTransport::disconnect_internal() {
+void TcpTransport::disconnect_internal()
+{
     std::scoped_lock lock(connection_mutex_);
 
     if (connection_.socket_fd != -1) {
@@ -389,7 +414,8 @@ void TcpTransport::disconnect_internal() {
     }
 }
 
-void TcpTransport::receive_loop() {
+void TcpTransport::receive_loop()
+{
     while (running_) {
         if (server_mode_) {
             // In server mode, accept new connections
@@ -408,13 +434,16 @@ void TcpTransport::receive_loop() {
                     if (!is_connected()) {
                         connection_.socket_fd = client_fd;
                         connection_.state = TcpConnectionState::CONNECTED;
-                        connection_.remote_endpoint = Endpoint("127.0.0.1", 0, TransportProtocol::TCP); // Would need to get actual client address
+                        connection_.remote_endpoint = Endpoint(
+                            "127.0.0.1", 0,
+                            TransportProtocol::TCP);  // Would need to get actual client address
                         active_connections_.fetch_add(1);
 
                         if (listener_) {
                             listener_->on_connection_established(connection_.remote_endpoint);
                         }
-                    } else {
+                    }
+                    else {
                         // Already have a connection, close this one
                         close(client_fd);
                     }
@@ -441,10 +470,12 @@ void TcpTransport::receive_loop() {
                 if (listener_) {
                     listener_->on_message_received(message, connection_.remote_endpoint);
                 }
-            } else {
+            }
+            else {
                 // Failed to parse message from buffer
             }
-        } else if (result != Result::SUCCESS) {
+        }
+        else if (result != Result::SUCCESS) {
             // Connection error
             disconnect_internal();
 
@@ -457,7 +488,8 @@ void TcpTransport::receive_loop() {
     }
 }
 
-void TcpTransport::connection_monitor_loop() {
+void TcpTransport::connection_monitor_loop()
+{
     while (running_) {
         if (is_connected()) {
             auto now = std::chrono::steady_clock::now();
@@ -474,7 +506,8 @@ void TcpTransport::connection_monitor_loop() {
     }
 }
 
-Result TcpTransport::send_data(int socket_fd, const std::vector<uint8_t>& data) {
+Result TcpTransport::send_data(int socket_fd, const std::vector<uint8_t>& data)
+{
     size_t total_sent = 0;
     const uint8_t* buffer = data.data();
 
@@ -486,7 +519,8 @@ Result TcpTransport::send_data(int socket_fd, const std::vector<uint8_t>& data) 
                 continue;  // Retry
             }
             return Result::NETWORK_ERROR;
-        } else if (sent == 0) {
+        }
+        else if (sent == 0) {
             return Result::NETWORK_ERROR;  // Connection closed
         }
 
@@ -496,9 +530,11 @@ Result TcpTransport::send_data(int socket_fd, const std::vector<uint8_t>& data) 
     return Result::SUCCESS;
 }
 
-Result TcpTransport::receive_data(int socket_fd, std::vector<uint8_t>& data) {
+Result TcpTransport::receive_data(int socket_fd, std::vector<uint8_t>& data)
+{
     // Respect maximum receive buffer size from config
-    size_t max_chunk_size = std::min(static_cast<size_t>(4096), config_.max_receive_buffer - data.size());
+    size_t max_chunk_size =
+        std::min(static_cast<size_t>(4096), config_.max_receive_buffer - data.size());
     if (max_chunk_size == 0) {
         return Result::BUFFER_OVERFLOW;  // Already at buffer limit
     }
@@ -511,7 +547,8 @@ Result TcpTransport::receive_data(int socket_fd, std::vector<uint8_t>& data) {
             return Result::SUCCESS;  // No data available
         }
         return Result::NETWORK_ERROR;
-    } else if (received == 0) {
+    }
+    else if (received == 0) {
         return Result::NETWORK_ERROR;  // Connection closed
     }
 
@@ -519,7 +556,8 @@ Result TcpTransport::receive_data(int socket_fd, std::vector<uint8_t>& data) {
     return Result::SUCCESS;
 }
 
-bool TcpTransport::parse_message_from_buffer(std::vector<uint8_t>& buffer, MessagePtr& message) {
+bool TcpTransport::parse_message_from_buffer(std::vector<uint8_t>& buffer, MessagePtr& message)
+{
     // For TCP, we expect complete messages in the buffer since TCP is stream-oriented
     // but our current implementation receives data in chunks
 
@@ -535,7 +573,8 @@ bool TcpTransport::parse_message_from_buffer(std::vector<uint8_t>& buffer, Messa
 
     // Parse message length from header (bytes 4-7 in big-endian)
     // Length field contains length from client_id to end of message
-    uint32_t length_from_client_id = (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
+    uint32_t length_from_client_id =
+        (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
 
     if (length_from_client_id < 8 || length_from_client_id > MAX_MESSAGE_SIZE) {
         // Invalid message length - try to resync by skipping this potential header
@@ -546,9 +585,8 @@ bool TcpTransport::parse_message_from_buffer(std::vector<uint8_t>& buffer, Messa
         while (search_start + SOMEIP_HEADER_SIZE <= buffer.size()) {
             // Check if this looks like a valid SOME/IP header
             uint32_t potential_msg_id = (buffer[search_start] << 24) |
-                                       (buffer[search_start + 1] << 16) |
-                                       (buffer[search_start + 2] << 8) |
-                                       buffer[search_start + 3];
+                                        (buffer[search_start + 1] << 16) |
+                                        (buffer[search_start + 2] << 8) | buffer[search_start + 3];
             if (potential_msg_id != 0) {  // Found a non-zero message ID
                 // Discard data before this potential header
                 buffer.erase(buffer.begin(), buffer.begin() + search_start);
@@ -582,14 +620,16 @@ bool TcpTransport::parse_message_from_buffer(std::vector<uint8_t>& buffer, Messa
         if (message->deserialize(message_data)) {
             return true;
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         // Message parsing exception
-    } catch (...) {
+    }
+    catch (...) {
         // Unknown message parsing exception
     }
 
     return false;
 }
 
-} // namespace transport
-} // namespace someip
+}  // namespace transport
+}  // namespace someip

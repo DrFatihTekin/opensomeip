@@ -14,13 +14,14 @@
 #ifndef SOMEIP_TRANSPORT_UDP_TRANSPORT_H
 #define SOMEIP_TRANSPORT_UDP_TRANSPORT_H
 
-#include "transport/transport.h"
-#include <thread>
 #include <atomic>
-#include <mutex>
-#include <queue>
 #include <condition_variable>
+#include <mutex>
 #include <netinet/in.h>
+#include <queue>
+#include <thread>
+
+#include "transport/transport.h"
 
 namespace someip {
 namespace transport {
@@ -32,7 +33,7 @@ namespace transport {
  * It supports both unicast and multicast communication.
  */
 class UdpTransport : public ITransport {
-public:
+   public:
     /**
      * @brief Constructor
      * @param local_endpoint Local endpoint to bind to
@@ -60,7 +61,7 @@ public:
     Result join_multicast_group(const std::string& multicast_address);
     Result leave_multicast_group(const std::string& multicast_address);
 
-private:
+   private:
     Endpoint local_endpoint_;
     int socket_fd_{-1};
     std::atomic<bool> running_;
@@ -76,7 +77,7 @@ private:
     std::mutex socket_mutex_;
 
     // Constants
-    static constexpr size_t MAX_UDP_PAYLOAD = 65507; // Maximum UDP payload size
+    static constexpr size_t MAX_UDP_PAYLOAD = 65507;  // Maximum UDP payload size
     static constexpr size_t RECEIVE_BUFFER_SIZE = 8192;
 
     // Private methods
@@ -95,7 +96,7 @@ private:
     UdpTransport& operator=(const UdpTransport&) = delete;
 };
 
-} // namespace transport
-} // namespace someip
+}  // namespace transport
+}  // namespace someip
 
-#endif // SOMEIP_TRANSPORT_UDP_TRANSPORT_H
+#endif  // SOMEIP_TRANSPORT_UDP_TRANSPORT_H

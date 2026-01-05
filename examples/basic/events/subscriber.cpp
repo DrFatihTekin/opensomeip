@@ -22,16 +22,15 @@
  * This demonstrates the fundamental event subscription pattern.
  */
 
-#include <iostream>
-#include <thread>
+#include <atomic>
 #include <chrono>
 #include <csignal>
-#include <atomic>
-#include <iomanip>
 #include <cstring>
-
 #include <events/event_subscriber.h>
 #include <events/event_types.h>
+#include <iomanip>
+#include <iostream>
+#include <thread>
 
 using namespace someip;
 using namespace someip::events;
@@ -47,26 +46,28 @@ const uint16_t SENSOR_EVENTGROUP_ID = 0x0001;
 // Global flag for graceful shutdown
 std::atomic<bool> running{true};
 
-void signal_handler(int signal) {
+void signal_handler(int signal)
+{
     std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
     running = false;
 }
 
 class SensorSubscriber : public EventSubscriber {
-public:
-    SensorSubscriber() : subscriber_(SENSOR_SERVICE_ID) {}
+   public:
+    SensorSubscriber() : subscriber_(SENSOR_SERVICE_ID)
+    {
+    }
 
-    bool initialize() {
+    bool initialize()
+    {
         // Set up event handlers
-        subscriber_.set_event_handler(TEMPERATURE_EVENT_ID,
-            [this](const EventNotification& notification) {
-                on_temperature_event(notification);
-            });
+        subscriber_.set_event_handler(
+            TEMPERATURE_EVENT_ID,
+            [this](const EventNotification& notification) { on_temperature_event(notification); });
 
-        subscriber_.set_event_handler(SPEED_EVENT_ID,
-            [this](const EventNotification& notification) {
-                on_speed_event(notification);
-            });
+        subscriber_.set_event_handler(
+            SPEED_EVENT_ID,
+            [this](const EventNotification& notification) { on_speed_event(notification); });
 
         // Subscribe to events
         if (!subscriber_.subscribe_event(TEMPERATURE_EVENT_ID, SENSOR_EVENTGROUP_ID)) {
@@ -84,15 +85,18 @@ public:
             return false;
         }
 
-        std::cout << "Sensor Subscriber initialized for service 0x" << std::hex << SENSOR_SERVICE_ID << std::endl;
+        std::cout << "Sensor Subscriber initialized for service 0x" << std::hex << SENSOR_SERVICE_ID
+                  << std::endl;
         std::cout << "Subscribed to events:" << std::endl;
-        std::cout << "  - Temperature (ID: 0x" << std::hex << TEMPERATURE_EVENT_ID << ")" << std::endl;
+        std::cout << "  - Temperature (ID: 0x" << std::hex << TEMPERATURE_EVENT_ID << ")"
+                  << std::endl;
         std::cout << "  - Speed (ID: 0x" << std::hex << SPEED_EVENT_ID << ")" << std::endl;
 
         return true;
     }
 
-    void run() {
+    void run()
+    {
         std::cout << "\nSensor Subscriber running. Press Ctrl+C to exit." << std::endl;
         std::cout << "Waiting for sensor events..." << std::endl;
 
@@ -104,10 +108,11 @@ public:
         std::cout << "Sensor Subscriber shut down." << std::endl;
     }
 
-private:
+   private:
     EventSubscriber subscriber_;
 
-    void on_temperature_event(const EventNotification& notification) {
+    void on_temperature_event(const EventNotification& notification)
+    {
         if (notification.event_data.size() < 4) {
             std::cout << "❌ Temperature event: Invalid data size" << std::endl;
             return;
@@ -115,22 +120,23 @@ private:
 
         // Deserialize temperature (big-endian float)
         uint32_t temp_bits = (notification.event_data[0] << 24) |
-                           (notification.event_data[1] << 16) |
-                           (notification.event_data[2] << 8) |
-                           notification.event_data[3];
+                             (notification.event_data[1] << 16) |
+                             (notification.event_data[2] << 8) | notification.event_data[3];
 
         float temperature;
         std::memcpy(&temperature, &temp_bits, sizeof(float));
 
         // Get timestamp
         auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-            notification.timestamp.time_since_epoch()).count();
+                             notification.timestamp.time_since_epoch())
+                             .count();
 
-        std::cout << "🌡️  Temperature Event: " << std::fixed << std::setprecision(1)
-                  << temperature << "°C (at " << timestamp << "ms)" << std::endl;
+        std::cout << "🌡️  Temperature Event: " << std::fixed << std::setprecision(1) << temperature
+                  << "°C (at " << timestamp << "ms)" << std::endl;
     }
 
-    void on_speed_event(const EventNotification& notification) {
+    void on_speed_event(const EventNotification& notification)
+    {
         if (notification.event_data.size() < 4) {
             std::cout << "❌ Speed event: Invalid data size" << std::endl;
             return;
@@ -138,23 +144,24 @@ private:
 
         // Deserialize speed (big-endian float)
         uint32_t speed_bits = (notification.event_data[0] << 24) |
-                            (notification.event_data[1] << 16) |
-                            (notification.event_data[2] << 8) |
-                            notification.event_data[3];
+                              (notification.event_data[1] << 16) |
+                              (notification.event_data[2] << 8) | notification.event_data[3];
 
         float speed;
         std::memcpy(&speed, &speed_bits, sizeof(float));
 
         // Get timestamp
         auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-            notification.timestamp.time_since_epoch()).count();
+                             notification.timestamp.time_since_epoch())
+                             .count();
 
-        std::cout << "🚗 Speed Event: " << std::fixed << std::setprecision(1)
-                  << speed << " km/h (at " << timestamp << "ms)" << std::endl;
+        std::cout << "🚗 Speed Event: " << std::fixed << std::setprecision(1) << speed
+                  << " km/h (at " << timestamp << "ms)" << std::endl;
     }
 };
 
-int main() {
+int main()
+{
     // Setup signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);

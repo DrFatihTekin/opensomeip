@@ -23,16 +23,15 @@
  * This shows enterprise-level service integration patterns.
  */
 
-#include <iostream>
-#include <thread>
 #include <chrono>
-#include <vector>
-#include <string>
-#include <iomanip>
 #include <cstring>
-
+#include <iomanip>
+#include <iostream>
 #include <rpc/rpc_client.h>
 #include <rpc/rpc_types.h>
+#include <string>
+#include <thread>
+#include <vector>
 
 using namespace someip;
 using namespace someip::rpc;
@@ -74,10 +73,13 @@ const uint16_t HUMIDITY_EVENT_ID = 0x8002;
 const uint16_t PRESSURE_EVENT_ID = 0x8003;
 
 class MultiServiceClient {
-public:
-    MultiServiceClient() : client_(0xABCD) {}
+   public:
+    MultiServiceClient() : client_(0xABCD)
+    {
+    }
 
-    bool initialize() {
+    bool initialize()
+    {
         if (!client_.initialize()) {
             std::cerr << "Failed to initialize RPC client" << std::endl;
             return false;
@@ -89,7 +91,8 @@ public:
         return true;
     }
 
-    void run_demonstrations() {
+    void run_demonstrations()
+    {
         std::cout << "\n=== Multi-Service Demonstrations ===" << std::endl;
 
         // Demonstrate Calculator Service
@@ -107,16 +110,18 @@ public:
         std::cout << "\n=== All Demonstrations Completed ===" << std::endl;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         client_.shutdown();
         std::cout << "Multi-Service Client shut down." << std::endl;
     }
 
-private:
+   private:
     RpcClient client_;
 
     // Calculator Service Demonstrations
-    void demonstrate_calculator_service() {
+    void demonstrate_calculator_service()
+    {
         std::cout << "\n--- Calculator Service Demonstration ---" << std::endl;
 
         // Perform various calculations
@@ -126,17 +131,19 @@ private:
         perform_calculation(CALCULATOR_SERVICE_ID, CALC_DIVIDE_METHOD_ID, 144, 12, "144 / 12");
 
         // Get calculation history
-        RpcSyncResult history_result = client_.call_method_sync(
-            CALCULATOR_SERVICE_ID, CALC_GET_HISTORY_METHOD_ID, {});
+        RpcSyncResult history_result =
+            client_.call_method_sync(CALCULATOR_SERVICE_ID, CALC_GET_HISTORY_METHOD_ID, {});
 
         if (history_result.result == RpcResult::SUCCESS) {
-            std::string history(history_result.return_values.begin(), history_result.return_values.end());
+            std::string history(history_result.return_values.begin(),
+                                history_result.return_values.end());
             std::cout << "\nCalculation History:\n" << history << std::endl;
         }
     }
 
-    void perform_calculation(uint16_t service_id, uint16_t method_id,
-                           int32_t a, int32_t b, const std::string& description) {
+    void perform_calculation(uint16_t service_id, uint16_t method_id, int32_t a, int32_t b,
+                             const std::string& description)
+    {
         // Serialize parameters
         std::vector<uint8_t> params(8);
         params[0] = (a >> 24) & 0xFF;
@@ -152,26 +159,28 @@ private:
 
         if (result.result == RpcResult::SUCCESS && result.return_values.size() >= 4) {
             int32_t calc_result = (result.return_values[0] << 24) |
-                                (result.return_values[1] << 16) |
-                                (result.return_values[2] << 8) |
-                                result.return_values[3];
+                                  (result.return_values[1] << 16) | (result.return_values[2] << 8) |
+                                  result.return_values[3];
 
             std::cout << "✓ " << description << " = " << calc_result << std::endl;
-        } else {
+        }
+        else {
             std::cout << "❌ " << description << " failed" << std::endl;
         }
     }
 
     // Filesystem Service Demonstrations
-    void demonstrate_filesystem_service() {
+    void demonstrate_filesystem_service()
+    {
         std::cout << "\n--- Filesystem Service Demonstration ---" << std::endl;
 
         // List directory
-        RpcSyncResult list_result = client_.call_method_sync(
-            FILESYSTEM_SERVICE_ID, FS_LIST_DIR_METHOD_ID, {});
+        RpcSyncResult list_result =
+            client_.call_method_sync(FILESYSTEM_SERVICE_ID, FS_LIST_DIR_METHOD_ID, {});
 
         if (list_result.result == RpcResult::SUCCESS) {
-            std::string file_list(list_result.return_values.begin(), list_result.return_values.end());
+            std::string file_list(list_result.return_values.begin(),
+                                  list_result.return_values.end());
             std::cout << "Files in system:\n" << file_list << std::endl;
         }
 
@@ -179,26 +188,28 @@ private:
         std::string filename = "/config/system.conf";
         std::vector<uint8_t> read_params(filename.begin(), filename.end());
 
-        RpcSyncResult read_result = client_.call_method_sync(
-            FILESYSTEM_SERVICE_ID, FS_READ_FILE_METHOD_ID, read_params);
+        RpcSyncResult read_result =
+            client_.call_method_sync(FILESYSTEM_SERVICE_ID, FS_READ_FILE_METHOD_ID, read_params);
 
         if (read_result.result == RpcResult::SUCCESS) {
-            std::string file_content(read_result.return_values.begin(), read_result.return_values.end());
+            std::string file_content(read_result.return_values.begin(),
+                                     read_result.return_values.end());
             std::cout << "\nContent of " << filename << ":\n" << file_content << std::endl;
         }
 
         // Write a new file
         std::string new_filename = "/data/user_data.txt";
-        std::string new_content = "Hello from multi-service client!\nTimestamp: " +
-                                std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+        std::string new_content =
+            "Hello from multi-service client!\nTimestamp: " +
+            std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
 
         std::vector<uint8_t> write_params;
         write_params.insert(write_params.end(), new_filename.begin(), new_filename.end());
         write_params.push_back('\0');  // Null terminator
         write_params.insert(write_params.end(), new_content.begin(), new_content.end());
 
-        RpcSyncResult write_result = client_.call_method_sync(
-            FILESYSTEM_SERVICE_ID, FS_WRITE_FILE_METHOD_ID, write_params);
+        RpcSyncResult write_result =
+            client_.call_method_sync(FILESYSTEM_SERVICE_ID, FS_WRITE_FILE_METHOD_ID, write_params);
 
         if (write_result.result == RpcResult::SUCCESS) {
             std::cout << "✓ Created file: " << new_filename << std::endl;
@@ -211,24 +222,27 @@ private:
             FILESYSTEM_SERVICE_ID, FS_GET_FILE_INFO_METHOD_ID, info_params);
 
         if (info_result.result == RpcResult::SUCCESS) {
-            std::string file_info(info_result.return_values.begin(), info_result.return_values.end());
+            std::string file_info(info_result.return_values.begin(),
+                                  info_result.return_values.end());
             std::cout << "File info:\n" << file_info << std::endl;
         }
     }
 
     // Sensor Service Demonstrations
-    void demonstrate_sensor_service() {
+    void demonstrate_sensor_service()
+    {
         std::cout << "\n--- Sensor Service Demonstration ---" << std::endl;
 
         // Get current sensor readings
-        RpcSyncResult readings_result = client_.call_method_sync(
-            SENSOR_SERVICE_ID, SENSOR_GET_READINGS_METHOD_ID, {});
+        RpcSyncResult readings_result =
+            client_.call_method_sync(SENSOR_SERVICE_ID, SENSOR_GET_READINGS_METHOD_ID, {});
 
-        if (readings_result.result == RpcResult::SUCCESS && readings_result.return_values.size() >= 12) {
+        if (readings_result.result == RpcResult::SUCCESS &&
+            readings_result.return_values.size() >= 12) {
             // Parse sensor readings (3 floats)
             auto parse_float = [](const std::vector<uint8_t>& data, size_t offset) -> float {
-                uint32_t bits = (data[offset] << 24) | (data[offset+1] << 16) |
-                              (data[offset+2] << 8) | data[offset+3];
+                uint32_t bits = (data[offset] << 24) | (data[offset + 1] << 16) |
+                                (data[offset + 2] << 8) | data[offset + 3];
                 float value;
                 std::memcpy(&value, &bits, sizeof(float));
                 return value;
@@ -239,28 +253,30 @@ private:
             float pressure = parse_float(readings_result.return_values, 8);
 
             std::cout << "Current Sensor Readings:" << std::endl;
-            std::cout << "  Temperature: " << std::fixed << std::setprecision(1) << temperature << "°C" << std::endl;
+            std::cout << "  Temperature: " << std::fixed << std::setprecision(1) << temperature
+                      << "°C" << std::endl;
             std::cout << "  Humidity: " << humidity << "%" << std::endl;
             std::cout << "  Pressure: " << pressure << " hPa" << std::endl;
         }
 
         // Configure sensors (enable all, 3-second interval)
-        std::vector<uint8_t> config_params = {1, 1, 1, 0, 0, 0, 3};  // temp, humidity, pressure enabled, 3s interval
+        std::vector<uint8_t> config_params = {
+            1, 1, 1, 0, 0, 0, 3};  // temp, humidity, pressure enabled, 3s interval
         config_params[3] = (3000 >> 24) & 0xFF;
         config_params[4] = (3000 >> 16) & 0xFF;
         config_params[5] = (3000 >> 8) & 0xFF;
         config_params[6] = 3000 & 0xFF;
 
-        RpcSyncResult config_result = client_.call_method_sync(
-            SENSOR_SERVICE_ID, SENSOR_SET_CONFIG_METHOD_ID, config_params);
+        RpcSyncResult config_result =
+            client_.call_method_sync(SENSOR_SERVICE_ID, SENSOR_SET_CONFIG_METHOD_ID, config_params);
 
         if (config_result.result == RpcResult::SUCCESS) {
             std::cout << "✓ Sensor configuration updated (3-second intervals)" << std::endl;
         }
 
         // Calibrate sensors
-        RpcSyncResult calib_result = client_.call_method_sync(
-            SENSOR_SERVICE_ID, SENSOR_CALIBRATE_METHOD_ID, {});
+        RpcSyncResult calib_result =
+            client_.call_method_sync(SENSOR_SERVICE_ID, SENSOR_CALIBRATE_METHOD_ID, {});
 
         if (calib_result.result == RpcResult::SUCCESS) {
             std::cout << "✓ Sensor calibration completed" << std::endl;
@@ -268,26 +284,28 @@ private:
     }
 
     // System Service Demonstrations
-    void demonstrate_system_service() {
+    void demonstrate_system_service()
+    {
         std::cout << "\n--- System Service Demonstration ---" << std::endl;
 
         // Get system information
-        RpcSyncResult info_result = client_.call_method_sync(
-            SYSTEM_SERVICE_ID, SYS_GET_INFO_METHOD_ID, {});
+        RpcSyncResult info_result =
+            client_.call_method_sync(SYSTEM_SERVICE_ID, SYS_GET_INFO_METHOD_ID, {});
 
         if (info_result.result == RpcResult::SUCCESS) {
-            std::string system_info(info_result.return_values.begin(), info_result.return_values.end());
+            std::string system_info(info_result.return_values.begin(),
+                                    info_result.return_values.end());
             std::cout << "System Information:\n" << system_info << std::endl;
         }
 
         // Get system load
-        RpcSyncResult load_result = client_.call_method_sync(
-            SYSTEM_SERVICE_ID, SYS_GET_LOAD_METHOD_ID, {});
+        RpcSyncResult load_result =
+            client_.call_method_sync(SYSTEM_SERVICE_ID, SYS_GET_LOAD_METHOD_ID, {});
 
         if (load_result.result == RpcResult::SUCCESS && load_result.return_values.size() >= 12) {
             auto parse_float = [](const std::vector<uint8_t>& data, size_t offset) -> float {
-                uint32_t bits = (data[offset] << 24) | (data[offset+1] << 16) |
-                              (data[offset+2] << 8) | data[offset+3];
+                uint32_t bits = (data[offset] << 24) | (data[offset + 1] << 16) |
+                                (data[offset + 2] << 8) | data[offset + 3];
                 float value;
                 std::memcpy(&value, &bits, sizeof(float));
                 return value;
@@ -295,10 +313,9 @@ private:
 
             float cpu_load = parse_float(load_result.return_values, 0);
             float memory_load = parse_float(load_result.return_values, 4);
-            uint32_t connections = (load_result.return_values[8] << 24) |
-                                 (load_result.return_values[9] << 16) |
-                                 (load_result.return_values[10] << 8) |
-                                 load_result.return_values[11];
+            uint32_t connections =
+                (load_result.return_values[8] << 24) | (load_result.return_values[9] << 16) |
+                (load_result.return_values[10] << 8) | load_result.return_values[11];
 
             std::cout << "System Load:" << std::endl;
             std::cout << "  CPU Usage: " << cpu_load << "%" << std::endl;
@@ -306,10 +323,10 @@ private:
             std::cout << "  Active Connections: " << connections << std::endl;
         }
     }
-
 };
 
-int main() {
+int main()
+{
     std::cout << "=== SOME/IP Multi-Service Client ===" << std::endl;
     std::cout << std::endl;
 

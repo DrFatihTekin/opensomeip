@@ -12,11 +12,13 @@
  ********************************************************************************/
 
 #include "someip/message.h"
-#include "common/result.h"
+
 #include <cstring>
-#include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+
+#include "common/result.h"
 #if defined(_WIN32)
 #include <winsock2.h>
 #else
@@ -31,11 +33,12 @@ Message::Message()
       interface_version_(SOMEIP_INTERFACE_VERSION),
       message_type_(MessageType::REQUEST),
       return_code_(ReturnCode::E_OK),
-      timestamp_(std::chrono::steady_clock::now()) {
+      timestamp_(std::chrono::steady_clock::now())
+{
 }
 
-Message::Message(MessageId message_id, RequestId request_id,
-                 MessageType message_type, ReturnCode return_code)
+Message::Message(MessageId message_id, RequestId request_id, MessageType message_type,
+                 ReturnCode return_code)
     : message_id_(message_id),
       length_(8),  // Will be updated by update_length()
       request_id_(request_id),
@@ -43,7 +46,8 @@ Message::Message(MessageId message_id, RequestId request_id,
       interface_version_(SOMEIP_INTERFACE_VERSION),
       message_type_(message_type),
       return_code_(return_code),
-      timestamp_(std::chrono::steady_clock::now()) {
+      timestamp_(std::chrono::steady_clock::now())
+{
     update_length();
 }
 
@@ -57,7 +61,8 @@ Message::Message(const Message& other)
       message_type_(other.message_type_),
       return_code_(other.return_code_),
       payload_(other.payload_),
-      timestamp_(other.timestamp_) {
+      timestamp_(other.timestamp_)
+{
     // Length is copied as-is for copy constructor
 }
 
@@ -70,13 +75,15 @@ Message::Message(Message&& other) noexcept
       message_type_(other.message_type_),
       return_code_(other.return_code_),
       payload_(std::move(other.payload_)),  // Move the payload
-      timestamp_(other.timestamp_) {
+      timestamp_(other.timestamp_)
+{
     // Invalidate the moved-from object (safety-critical design: moved-from messages are invalid)
     other.interface_version_ = 0xFF;
     other.length_ = 8;  // Reset length for empty payload
 }
 
-Message& Message::operator=(const Message& other) {
+Message& Message::operator=(const Message& other)
+{
     if (this != &other) {
         message_id_ = other.message_id_;
         length_ = other.length_;
@@ -91,13 +98,15 @@ Message& Message::operator=(const Message& other) {
     return *this;
 }
 
-Message& Message::operator=(Message&& other) noexcept {
+Message& Message::operator=(Message&& other) noexcept
+{
     if (this != &other) {
         message_id_ = other.message_id_;
         length_ = 8 + other.payload_.size();  // Length for moved-to object
         request_id_ = other.request_id_;
         protocol_version_ = other.protocol_version_;
-        interface_version_ = SOMEIP_INTERFACE_VERSION;  // Valid interface version for moved-to object
+        interface_version_ =
+            SOMEIP_INTERFACE_VERSION;  // Valid interface version for moved-to object
         message_type_ = other.message_type_;
         return_code_ = other.return_code_;
         payload_ = std::move(other.payload_);  // Move the payload
@@ -110,7 +119,8 @@ Message& Message::operator=(Message&& other) noexcept {
     return *this;
 }
 
-std::vector<uint8_t> Message::serialize() const {
+std::vector<uint8_t> Message::serialize() const
+{
     std::vector<uint8_t> data;
     data.reserve(get_total_size());
 
@@ -138,7 +148,8 @@ std::vector<uint8_t> Message::serialize() const {
     return data;
 }
 
-bool Message::deserialize(const std::vector<uint8_t>& data) {
+bool Message::deserialize(const std::vector<uint8_t>& data)
+{
     if (data.size() < MIN_MESSAGE_SIZE) {
         return false;
     }
@@ -208,11 +219,13 @@ bool Message::deserialize(const std::vector<uint8_t>& data) {
     return is_valid();
 }
 
-bool Message::is_valid() const {
+bool Message::is_valid() const
+{
     return has_valid_header() && has_valid_payload();
 }
 
-bool Message::has_valid_header() const {
+bool Message::has_valid_header() const
+{
     // Check protocol version
     if (protocol_version_ != SOMEIP_PROTOCOL_VERSION) {
         return false;
@@ -276,32 +289,32 @@ bool Message::has_valid_header() const {
     return true;
 }
 
-bool Message::has_valid_payload() const {
+bool Message::has_valid_payload() const
+{
     // Check payload size limits
     return payload_.size() <= MAX_TCP_PAYLOAD_SIZE;
 }
 
-void Message::update_length() {
+void Message::update_length()
+{
     // SOME/IP length field contains length from client_id to end of message
     // client_id(2) + session_id(2) + protocol_version(1) + interface_version(1) +
     // message_type(1) + return_code(1) + payload_size = 8 + payload_size
     length_ = 8 + payload_.size();
 }
 
-std::string Message::to_string() const {
+std::string Message::to_string() const
+{
     std::stringstream ss;
-    ss << "Message{"
-       << "service_id=0x" << std::hex << std::setw(4) << std::setfill('0') << get_service_id()
-       << ", method_id=0x" << std::hex << std::setw(4) << std::setfill('0') << get_method_id()
-       << ", client_id=0x" << std::hex << std::setw(4) << std::setfill('0') << get_client_id()
-       << ", session_id=0x" << std::hex << std::setw(4) << std::setfill('0') << get_session_id()
-       << ", type=" << someip::to_string(message_type_)
-       << ", return_code=" << someip::to_string(return_code_)
-       << ", length=" << std::dec << length_
-       << ", payload_size=" << payload_.size()
-       << "}";
+    ss << "Message{" << "service_id=0x" << std::hex << std::setw(4) << std::setfill('0')
+       << get_service_id() << ", method_id=0x" << std::hex << std::setw(4) << std::setfill('0')
+       << get_method_id() << ", client_id=0x" << std::hex << std::setw(4) << std::setfill('0')
+       << get_client_id() << ", session_id=0x" << std::hex << std::setw(4) << std::setfill('0')
+       << get_session_id() << ", type=" << someip::to_string(message_type_)
+       << ", return_code=" << someip::to_string(return_code_) << ", length=" << std::dec << length_
+       << ", payload_size=" << payload_.size() << "}";
 
     return ss.str();
 }
 
-} // namespace someip
+}  // namespace someip

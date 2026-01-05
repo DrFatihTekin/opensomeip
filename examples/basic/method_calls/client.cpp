@@ -22,13 +22,12 @@
  * This shows the fundamental RPC client patterns in SOME/IP.
  */
 
-#include <iostream>
-#include <thread>
 #include <chrono>
-#include <vector>
-
+#include <iostream>
 #include <rpc/rpc_client.h>
 #include <rpc/rpc_types.h>
+#include <thread>
+#include <vector>
 
 using namespace someip;
 using namespace someip::rpc;
@@ -40,10 +39,13 @@ const uint16_t MULTIPLY_METHOD_ID = 0x0002;
 const uint16_t GET_STATS_METHOD_ID = 0x0003;
 
 class CalculatorClient {
-public:
-    CalculatorClient() : client_(0xABCD) {}  // Client ID
+   public:
+    CalculatorClient() : client_(0xABCD)
+    {
+    }  // Client ID
 
-    bool initialize() {
+    bool initialize()
+    {
         if (!client_.initialize()) {
             std::cerr << "Failed to initialize RPC client" << std::endl;
             return false;
@@ -53,7 +55,8 @@ public:
         return true;
     }
 
-    void run_calculations() {
+    void run_calculations()
+    {
         std::cout << "\n=== Running Calculator Operations ===" << std::endl;
 
         // Test ADD operation
@@ -72,15 +75,17 @@ public:
         std::cout << "\n=== All Operations Completed ===" << std::endl;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         client_.shutdown();
         std::cout << "Calculator Client shut down." << std::endl;
     }
 
-private:
+   private:
     RpcClient client_;
 
-    void test_add(int32_t a, int32_t b) {
+    void test_add(int32_t a, int32_t b)
+    {
         std::cout << "\n--- Testing ADD(" << a << ", " << b << ") ---" << std::endl;
 
         // Serialize parameters (big-endian)
@@ -95,8 +100,8 @@ private:
         parameters[7] = b & 0xFF;
 
         // Make synchronous RPC call
-        RpcSyncResult result = client_.call_method_sync(
-            CALCULATOR_SERVICE_ID, ADD_METHOD_ID, parameters);
+        RpcSyncResult result =
+            client_.call_method_sync(CALCULATOR_SERVICE_ID, ADD_METHOD_ID, parameters);
 
         if (result.result != RpcResult::SUCCESS) {
             std::cout << "RPC call failed: " << static_cast<int>(result.result) << std::endl;
@@ -109,16 +114,15 @@ private:
             return;
         }
 
-        int32_t sum = (result.return_values[0] << 24) |
-                     (result.return_values[1] << 16) |
-                     (result.return_values[2] << 8) |
-                     result.return_values[3];
+        int32_t sum = (result.return_values[0] << 24) | (result.return_values[1] << 16) |
+                      (result.return_values[2] << 8) | result.return_values[3];
 
         std::cout << "Result: " << a << " + " << b << " = " << sum << std::endl;
         std::cout << "✓ ADD operation successful" << std::endl;
     }
 
-    void test_multiply(int32_t a, int32_t b) {
+    void test_multiply(int32_t a, int32_t b)
+    {
         std::cout << "\n--- Testing MULTIPLY(" << a << ", " << b << ") ---" << std::endl;
 
         // Serialize parameters (big-endian)
@@ -133,8 +137,8 @@ private:
         parameters[7] = b & 0xFF;
 
         // Make synchronous RPC call
-        RpcSyncResult result = client_.call_method_sync(
-            CALCULATOR_SERVICE_ID, MULTIPLY_METHOD_ID, parameters);
+        RpcSyncResult result =
+            client_.call_method_sync(CALCULATOR_SERVICE_ID, MULTIPLY_METHOD_ID, parameters);
 
         if (result.result != RpcResult::SUCCESS) {
             std::cout << "RPC call failed: " << static_cast<int>(result.result) << std::endl;
@@ -147,24 +151,23 @@ private:
             return;
         }
 
-        int32_t product = (result.return_values[0] << 24) |
-                         (result.return_values[1] << 16) |
-                         (result.return_values[2] << 8) |
-                         result.return_values[3];
+        int32_t product = (result.return_values[0] << 24) | (result.return_values[1] << 16) |
+                          (result.return_values[2] << 8) | result.return_values[3];
 
         std::cout << "Result: " << a << " * " << b << " = " << product << std::endl;
         std::cout << "✓ MULTIPLY operation successful" << std::endl;
     }
 
-    void test_get_stats() {
+    void test_get_stats()
+    {
         std::cout << "\n--- Testing GET_STATS() ---" << std::endl;
 
         // No parameters needed
         std::vector<uint8_t> parameters;
 
         // Make synchronous RPC call
-        RpcSyncResult result = client_.call_method_sync(
-            CALCULATOR_SERVICE_ID, GET_STATS_METHOD_ID, parameters);
+        RpcSyncResult result =
+            client_.call_method_sync(CALCULATOR_SERVICE_ID, GET_STATS_METHOD_ID, parameters);
 
         if (result.result != RpcResult::SUCCESS) {
             std::cout << "RPC call failed: " << static_cast<int>(result.result) << std::endl;
@@ -177,17 +180,17 @@ private:
             return;
         }
 
-        uint32_t call_count = (result.return_values[0] << 24) |
-                             (result.return_values[1] << 16) |
-                             (result.return_values[2] << 8) |
-                             result.return_values[3];
+        uint32_t call_count = (result.return_values[0] << 24) | (result.return_values[1] << 16) |
+                              (result.return_values[2] << 8) | result.return_values[3];
 
-        std::cout << "Server statistics: " << call_count << " total method calls processed" << std::endl;
+        std::cout << "Server statistics: " << call_count << " total method calls processed"
+                  << std::endl;
         std::cout << "✓ GET_STATS operation successful" << std::endl;
     }
 };
 
-int main() {
+int main()
+{
     std::cout << "=== SOME/IP Method Calls Client ===" << std::endl;
     std::cout << std::endl;
 

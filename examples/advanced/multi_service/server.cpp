@@ -24,23 +24,22 @@
  * This shows enterprise-level service architecture patterns.
  */
 
-#include <iostream>
-#include <thread>
+#include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <csignal>
-#include <atomic>
-#include <unordered_map>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <mutex>
 #include <cstring>
-#include <algorithm>
-
-#include <rpc/rpc_server.h>
-#include <rpc/rpc_types.h>
 #include <events/event_publisher.h>
 #include <events/event_types.h>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <rpc/rpc_server.h>
+#include <rpc/rpc_types.h>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 using namespace someip;
 using namespace someip::rpc;
@@ -85,21 +84,25 @@ const uint16_t PRESSURE_EVENT_ID = 0x8003;
 // Global flag for graceful shutdown
 std::atomic<bool> running{true};
 
-void signal_handler(int signal) {
+void signal_handler(int signal)
+{
     std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
     running = false;
 }
 
 class MultiServiceServer {
-public:
+   public:
     MultiServiceServer()
         : calculator_server_(CALCULATOR_SERVICE_ID),
           filesystem_server_(FILESYSTEM_SERVICE_ID),
           sensor_server_(SENSOR_SERVICE_ID),
           system_server_(SYSTEM_SERVICE_ID),
-          sensor_publisher_(SENSOR_SERVICE_ID, 0x0001) {}
+          sensor_publisher_(SENSOR_SERVICE_ID, 0x0001)
+    {
+    }
 
-    bool initialize() {
+    bool initialize()
+    {
         // Initialize all services
         if (!initialize_calculator_service()) {
             std::cerr << "Failed to initialize calculator service" << std::endl;
@@ -123,22 +126,23 @@ public:
 
         std::cout << "Multi-Service Server initialized successfully!" << std::endl;
         std::cout << "Available services:" << std::endl;
-        std::cout << "  - Calculator Service (0x" << std::hex << CALCULATOR_SERVICE_ID << ")" << std::endl;
-        std::cout << "  - Filesystem Service (0x" << std::hex << FILESYSTEM_SERVICE_ID << ")" << std::endl;
+        std::cout << "  - Calculator Service (0x" << std::hex << CALCULATOR_SERVICE_ID << ")"
+                  << std::endl;
+        std::cout << "  - Filesystem Service (0x" << std::hex << FILESYSTEM_SERVICE_ID << ")"
+                  << std::endl;
         std::cout << "  - Sensor Service (0x" << std::hex << SENSOR_SERVICE_ID << ")" << std::endl;
         std::cout << "  - System Service (0x" << std::hex << SYSTEM_SERVICE_ID << ")" << std::endl;
 
         return true;
     }
 
-    void run() {
+    void run()
+    {
         std::cout << "\nMulti-Service Server running. Press Ctrl+C to exit." << std::endl;
         std::cout << "All services are active and accepting requests..." << std::endl;
 
         // Start sensor data publishing thread
-        std::thread sensor_thread([this]() {
-            run_sensor_publisher();
-        });
+        std::thread sensor_thread([this]() { run_sensor_publisher(); });
         sensor_thread.detach();
 
         while (running) {
@@ -149,7 +153,7 @@ public:
         std::cout << "Multi-Service Server shut down." << std::endl;
     }
 
-private:
+   private:
     RpcServer calculator_server_;
     RpcServer filesystem_server_;
     RpcServer sensor_server_;
@@ -174,7 +178,8 @@ private:
 
     std::mutex sensor_mutex_;
 
-    void shutdown() {
+    void shutdown()
+    {
         sensor_publisher_.shutdown();
         system_server_.shutdown();
         sensor_server_.shutdown();
@@ -183,38 +188,48 @@ private:
     }
 
     // Calculator Service Implementation
-    bool initialize_calculator_service() {
-        calculator_server_.register_method(CALC_ADD_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
-                return handle_calculator_op(client_id, session_id, input, output, "ADD", [](int32_t a, int32_t b) { return a + b; });
+    bool initialize_calculator_service()
+    {
+        calculator_server_.register_method(
+            CALC_ADD_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
+                return handle_calculator_op(client_id, session_id, input, output, "ADD",
+                                            [](int32_t a, int32_t b) { return a + b; });
             });
 
-        calculator_server_.register_method(CALC_SUBTRACT_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
-                return handle_calculator_op(client_id, session_id, input, output, "SUBTRACT", [](int32_t a, int32_t b) { return a - b; });
+        calculator_server_.register_method(
+            CALC_SUBTRACT_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
+                return handle_calculator_op(client_id, session_id, input, output, "SUBTRACT",
+                                            [](int32_t a, int32_t b) { return a - b; });
             });
 
-        calculator_server_.register_method(CALC_MULTIPLY_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
-                return handle_calculator_op(client_id, session_id, input, output, "MULTIPLY", [](int32_t a, int32_t b) { return a * b; });
+        calculator_server_.register_method(
+            CALC_MULTIPLY_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
+                return handle_calculator_op(client_id, session_id, input, output, "MULTIPLY",
+                                            [](int32_t a, int32_t b) { return a * b; });
             });
 
-        calculator_server_.register_method(CALC_DIVIDE_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        calculator_server_.register_method(
+            CALC_DIVIDE_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_calculator_op(client_id, session_id, input, output, "DIVIDE",
-                    [](int32_t a, int32_t b) -> int32_t {
-                        if (b == 0) throw std::runtime_error("Division by zero");
-                        return a / b;
-                    });
+                                            [](int32_t a, int32_t b) -> int32_t {
+                                                if (b == 0)
+                                                    throw std::runtime_error("Division by zero");
+                                                return a / b;
+                                            });
             });
 
-        calculator_server_.register_method(CALC_GET_HISTORY_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        calculator_server_.register_method(
+            CALC_GET_HISTORY_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_get_calc_history(client_id, session_id, input, output);
             });
 
@@ -222,9 +237,10 @@ private:
     }
 
     RpcResult handle_calculator_op(uint16_t client_id, uint16_t session_id,
-                                  const std::vector<uint8_t>& input, std::vector<uint8_t>& output,
-                                  const std::string& op_name,
-                                  std::function<int32_t(int32_t, int32_t)> operation) {
+                                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output,
+                                   const std::string& op_name,
+                                   std::function<int32_t(int32_t, int32_t)> operation)
+    {
         if (input.size() < 8) {
             return RpcResult::INVALID_PARAMETERS;
         }
@@ -236,9 +252,11 @@ private:
             int32_t result = operation(a, b);
 
             std::string history_entry = op_name + ": " + std::to_string(a) + " " +
-                                      (op_name == "DIVIDE" ? "/" : op_name == "MULTIPLY" ? "*" :
-                                       op_name == "ADD" ? "+" : "-") + " " +
-                                      std::to_string(b) + " = " + std::to_string(result);
+                                        (op_name == "DIVIDE"     ? "/"
+                                         : op_name == "MULTIPLY" ? "*"
+                                         : op_name == "ADD"      ? "+"
+                                                                 : "-") +
+                                        " " + std::to_string(b) + " = " + std::to_string(result);
 
             {
                 std::lock_guard<std::mutex> lock(calc_mutex_);
@@ -258,23 +276,28 @@ private:
             output[3] = result & 0xFF;
 
             return RpcResult::SUCCESS;
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e) {
             std::cout << "[CALCULATOR] Error: " << e.what() << std::endl;
             return RpcResult::INVALID_PARAMETERS;
         }
     }
 
     RpcResult handle_get_calc_history(uint16_t client_id, uint16_t session_id,
-                                    const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                      const std::vector<uint8_t>& input,
+                                      std::vector<uint8_t>& output)
+    {
         std::lock_guard<std::mutex> lock(calc_mutex_);
 
         std::string history;
         for (size_t i = 0; i < calc_history_.size(); ++i) {
-            if (i > 0) history += "\n";
+            if (i > 0)
+                history += "\n";
             history += calc_history_[i];
         }
 
-        std::cout << "[CALCULATOR] Returning calculation history (" << calc_history_.size() << " entries)" << std::endl;
+        std::cout << "[CALCULATOR] Returning calculation history (" << calc_history_.size()
+                  << " entries)" << std::endl;
 
         // Serialize as string
         output.assign(history.begin(), history.end());
@@ -282,34 +305,40 @@ private:
     }
 
     // Filesystem Service Implementation
-    bool initialize_filesystem_service() {
-        filesystem_server_.register_method(FS_LIST_DIR_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+    bool initialize_filesystem_service()
+    {
+        filesystem_server_.register_method(
+            FS_LIST_DIR_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_list_dir(client_id, session_id, input, output);
             });
 
-        filesystem_server_.register_method(FS_READ_FILE_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        filesystem_server_.register_method(
+            FS_READ_FILE_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_read_file(client_id, session_id, input, output);
             });
 
-        filesystem_server_.register_method(FS_WRITE_FILE_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        filesystem_server_.register_method(
+            FS_WRITE_FILE_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_write_file(client_id, session_id, input, output);
             });
 
-        filesystem_server_.register_method(FS_DELETE_FILE_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        filesystem_server_.register_method(
+            FS_DELETE_FILE_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_delete_file(client_id, session_id, input, output);
             });
 
-        filesystem_server_.register_method(FS_GET_FILE_INFO_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        filesystem_server_.register_method(
+            FS_GET_FILE_INFO_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_get_file_info(client_id, session_id, input, output);
             });
 
@@ -318,19 +347,22 @@ private:
             std::lock_guard<std::mutex> lock(fs_mutex_);
             filesystem_["/config/system.conf"] = "# System configuration\nversion=1.0\n";
             filesystem_["/logs/app.log"] = "2024-01-01 10:00:00 INFO Application started\n";
-            filesystem_["/data/sensor.csv"] = "timestamp,temperature,humidity\n1640995200,23.5,65.2\n";
+            filesystem_["/data/sensor.csv"] =
+                "timestamp,temperature,humidity\n1640995200,23.5,65.2\n";
         }
 
         return filesystem_server_.initialize();
     }
 
     RpcResult handle_list_dir(uint16_t client_id, uint16_t session_id,
-                            const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                              const std::vector<uint8_t>& input, std::vector<uint8_t>& output)
+    {
         std::lock_guard<std::mutex> lock(fs_mutex_);
 
         std::string file_list;
         for (const auto& file : filesystem_) {
-            if (!file_list.empty()) file_list += "\n";
+            if (!file_list.empty())
+                file_list += "\n";
             file_list += file.first;
         }
 
@@ -341,7 +373,8 @@ private:
     }
 
     RpcResult handle_read_file(uint16_t client_id, uint16_t session_id,
-                             const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                               const std::vector<uint8_t>& input, std::vector<uint8_t>& output)
+    {
         if (input.empty()) {
             return RpcResult::INVALID_PARAMETERS;
         }
@@ -356,14 +389,16 @@ private:
             return RpcResult::INVALID_PARAMETERS;  // File not found
         }
 
-        std::cout << "[FILESYSTEM] Read file: " << filename << " (" << it->second.size() << " bytes)" << std::endl;
+        std::cout << "[FILESYSTEM] Read file: " << filename << " (" << it->second.size()
+                  << " bytes)" << std::endl;
 
         output.assign(it->second.begin(), it->second.end());
         return RpcResult::SUCCESS;
     }
 
     RpcResult handle_write_file(uint16_t client_id, uint16_t session_id,
-                              const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                const std::vector<uint8_t>& input, std::vector<uint8_t>& output)
+    {
         if (input.size() < 2) {  // Need at least filename null terminator + 1 data byte
             return RpcResult::INVALID_PARAMETERS;
         }
@@ -382,15 +417,17 @@ private:
             filesystem_[filename] = data;
         }
 
-        std::cout << "[FILESYSTEM] Wrote file: " << filename << " (" << data.size() << " bytes)" << std::endl;
+        std::cout << "[FILESYSTEM] Wrote file: " << filename << " (" << data.size() << " bytes)"
+                  << std::endl;
 
         output.resize(4);
-        output[0] = 0; // Success
+        output[0] = 0;  // Success
         return RpcResult::SUCCESS;
     }
 
     RpcResult handle_delete_file(uint16_t client_id, uint16_t session_id,
-                               const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                 const std::vector<uint8_t>& input, std::vector<uint8_t>& output)
+    {
         if (input.empty()) {
             return RpcResult::INVALID_PARAMETERS;
         }
@@ -403,18 +440,20 @@ private:
         if (erased > 0) {
             std::cout << "[FILESYSTEM] Deleted file: " << filename << std::endl;
             output.resize(4);
-            output[0] = 0; // Success
-        } else {
+            output[0] = 0;  // Success
+        }
+        else {
             std::cout << "[FILESYSTEM] File not found for deletion: " << filename << std::endl;
             output.resize(4);
-            output[0] = 1; // Not found
+            output[0] = 1;  // Not found
         }
 
         return RpcResult::SUCCESS;
     }
 
     RpcResult handle_get_file_info(uint16_t client_id, uint16_t session_id,
-                                 const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output)
+    {
         if (input.empty()) {
             return RpcResult::INVALID_PARAMETERS;
         }
@@ -429,31 +468,37 @@ private:
             return RpcResult::INVALID_PARAMETERS;
         }
 
-        std::string info = "File: " + filename + "\nSize: " + std::to_string(it->second.size()) + " bytes";
+        std::string info =
+            "File: " + filename + "\nSize: " + std::to_string(it->second.size()) + " bytes";
         output.assign(info.begin(), info.end());
 
-        std::cout << "[FILESYSTEM] File info: " << filename << " (" << it->second.size() << " bytes)" << std::endl;
+        std::cout << "[FILESYSTEM] File info: " << filename << " (" << it->second.size()
+                  << " bytes)" << std::endl;
 
         return RpcResult::SUCCESS;
     }
 
     // Sensor Service Implementation
-    bool initialize_sensor_service() {
-        sensor_server_.register_method(SENSOR_GET_READINGS_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+    bool initialize_sensor_service()
+    {
+        sensor_server_.register_method(
+            SENSOR_GET_READINGS_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_get_sensor_readings(client_id, session_id, input, output);
             });
 
-        sensor_server_.register_method(SENSOR_SET_CONFIG_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        sensor_server_.register_method(
+            SENSOR_SET_CONFIG_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_set_sensor_config(client_id, session_id, input, output);
             });
 
-        sensor_server_.register_method(SENSOR_CALIBRATE_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        sensor_server_.register_method(
+            SENSOR_CALIBRATE_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_calibrate_sensor(client_id, session_id, input, output);
             });
 
@@ -488,7 +533,9 @@ private:
     }
 
     RpcResult handle_get_sensor_readings(uint16_t client_id, uint16_t session_id,
-                                       const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                         const std::vector<uint8_t>& input,
+                                         std::vector<uint8_t>& output)
+    {
         std::lock_guard<std::mutex> lock(sensor_mutex_);
 
         // Generate current sensor readings
@@ -496,8 +543,8 @@ private:
         float humidity = 60.0f + (rand() % 200 - 100) / 10.0f;    // 50-70%
         float pressure = 1013.25f + (rand() % 100 - 50) / 10.0f;  // 1008-1018 hPa
 
-        std::cout << "[SENSOR] Readings - Temp: " << temperature << "°C, Humidity: "
-                  << humidity << "%, Pressure: " << pressure << " hPa" << std::endl;
+        std::cout << "[SENSOR] Readings - Temp: " << temperature << "°C, Humidity: " << humidity
+                  << "%, Pressure: " << pressure << " hPa" << std::endl;
 
         // Serialize readings (big-endian floats)
         output.resize(12);  // 3 floats * 4 bytes each
@@ -530,7 +577,9 @@ private:
     }
 
     RpcResult handle_set_sensor_config(uint16_t client_id, uint16_t session_id,
-                                     const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                       const std::vector<uint8_t>& input,
+                                       std::vector<uint8_t>& output)
+    {
         if (input.size() < 7) {  // 3 booleans + 4-byte interval
             return RpcResult::INVALID_PARAMETERS;
         }
@@ -541,20 +590,24 @@ private:
         sensor_config_.humidity_enabled = input[1] != 0;
         sensor_config_.pressure_enabled = input[2] != 0;
 
-        sensor_config_.update_interval_ms = (input[3] << 24) | (input[4] << 16) | (input[5] << 8) | input[6];
+        sensor_config_.update_interval_ms =
+            (input[3] << 24) | (input[4] << 16) | (input[5] << 8) | input[6];
 
-        std::cout << "[SENSOR] Configuration updated - Temp: " << (sensor_config_.temperature_enabled ? "ON" : "OFF")
+        std::cout << "[SENSOR] Configuration updated - Temp: "
+                  << (sensor_config_.temperature_enabled ? "ON" : "OFF")
                   << ", Humidity: " << (sensor_config_.humidity_enabled ? "ON" : "OFF")
                   << ", Pressure: " << (sensor_config_.pressure_enabled ? "ON" : "OFF")
                   << ", Interval: " << sensor_config_.update_interval_ms << "ms" << std::endl;
 
         output.resize(4);
-        output[0] = 0; // Success
+        output[0] = 0;  // Success
         return RpcResult::SUCCESS;
     }
 
     RpcResult handle_calibrate_sensor(uint16_t client_id, uint16_t session_id,
-                                    const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                      const std::vector<uint8_t>& input,
+                                      std::vector<uint8_t>& output)
+    {
         std::cout << "[SENSOR] Starting sensor calibration..." << std::endl;
 
         // Simulate calibration process
@@ -563,11 +616,12 @@ private:
         std::cout << "[SENSOR] Sensor calibration completed" << std::endl;
 
         output.resize(4);
-        output[0] = 0; // Success
+        output[0] = 0;  // Success
         return RpcResult::SUCCESS;
     }
 
-    void run_sensor_publisher() {
+    void run_sensor_publisher()
+    {
         while (running) {
             std::lock_guard<std::mutex> lock(sensor_mutex_);
 
@@ -613,33 +667,39 @@ private:
                 sensor_publisher_.publish_event(PRESSURE_EVENT_ID, pressure_data);
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(sensor_config_.update_interval_ms));
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(sensor_config_.update_interval_ms));
         }
     }
 
     // System Service Implementation
-    bool initialize_system_service() {
-        system_server_.register_method(SYS_GET_INFO_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+    bool initialize_system_service()
+    {
+        system_server_.register_method(
+            SYS_GET_INFO_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_get_system_info(client_id, session_id, input, output);
             });
 
-        system_server_.register_method(SYS_GET_LOAD_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        system_server_.register_method(
+            SYS_GET_LOAD_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_get_system_load(client_id, session_id, input, output);
             });
 
-        system_server_.register_method(SYS_SHUTDOWN_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        system_server_.register_method(
+            SYS_SHUTDOWN_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_system_shutdown(client_id, session_id, input, output);
             });
 
-        system_server_.register_method(SYS_RESTART_METHOD_ID,
-            [this](uint16_t client_id, uint16_t session_id,
-                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) -> RpcResult {
+        system_server_.register_method(
+            SYS_RESTART_METHOD_ID,
+            [this](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                   std::vector<uint8_t>& output) -> RpcResult {
                 return handle_system_restart(client_id, session_id, input, output);
             });
 
@@ -647,7 +707,9 @@ private:
     }
 
     RpcResult handle_get_system_info(uint16_t client_id, uint16_t session_id,
-                                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                     const std::vector<uint8_t>& input,
+                                     std::vector<uint8_t>& output)
+    {
         std::string info = "Multi-Service SOME/IP Server\n";
         info += "Version: 1.0.0\n";
         info += "Services: Calculator, Filesystem, Sensor, System\n";
@@ -661,11 +723,13 @@ private:
     }
 
     RpcResult handle_get_system_load(uint16_t client_id, uint16_t session_id,
-                                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+                                     const std::vector<uint8_t>& input,
+                                     std::vector<uint8_t>& output)
+    {
         // Simulate system load
-        float cpu_load = 25.0f + (rand() % 500) / 10.0f;    // 25-75%
-        float memory_load = 40.0f + (rand() % 300) / 10.0f; // 40-70%
-        uint32_t active_connections = 4;  // Our 4 services
+        float cpu_load = 25.0f + (rand() % 500) / 10.0f;     // 25-75%
+        float memory_load = 40.0f + (rand() % 300) / 10.0f;  // 40-70%
+        uint32_t active_connections = 4;                     // Our 4 services
 
         std::cout << "[SYSTEM] Load - CPU: " << cpu_load << "%, Memory: " << memory_load
                   << "%, Connections: " << active_connections << std::endl;
@@ -699,27 +763,33 @@ private:
     }
 
     RpcResult handle_system_shutdown(uint16_t client_id, uint16_t session_id,
-                                   const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
-        std::cout << "[SYSTEM] Shutdown requested by client 0x" << std::hex << client_id << std::endl;
+                                     const std::vector<uint8_t>& input,
+                                     std::vector<uint8_t>& output)
+    {
+        std::cout << "[SYSTEM] Shutdown requested by client 0x" << std::hex << client_id
+                  << std::endl;
         std::cout << "Note: This is a demo - actual shutdown not performed" << std::endl;
 
         output.resize(4);
-        output[0] = 0; // Success (would normally require authentication)
+        output[0] = 0;  // Success (would normally require authentication)
         return RpcResult::SUCCESS;
     }
 
     RpcResult handle_system_restart(uint16_t client_id, uint16_t session_id,
-                                  const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
-        std::cout << "[SYSTEM] Restart requested by client 0x" << std::hex << client_id << std::endl;
+                                    const std::vector<uint8_t>& input, std::vector<uint8_t>& output)
+    {
+        std::cout << "[SYSTEM] Restart requested by client 0x" << std::hex << client_id
+                  << std::endl;
         std::cout << "Note: This is a demo - actual restart not performed" << std::endl;
 
         output.resize(4);
-        output[0] = 0; // Success (would normally require authentication)
+        output[0] = 0;  // Success (would normally require authentication)
         return RpcResult::SUCCESS;
     }
 };
 
-int main() {
+int main()
+{
     // Setup signal handler for graceful shutdown
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);

@@ -12,10 +12,12 @@
  ********************************************************************************/
 
 #include "tp/tp_manager.h"
-#include "tp/tp_segmenter.h"
-#include "tp/tp_reassembler.h"
-#include "someip/message.h"
+
 #include <algorithm>
+
+#include "someip/message.h"
+#include "tp/tp_reassembler.h"
+#include "tp/tp_segmenter.h"
 
 namespace someip {
 namespace tp {
@@ -23,27 +25,32 @@ namespace tp {
 TpManager::TpManager(const TpConfig& config)
     : config_(config),
       segmenter_(std::make_unique<TpSegmenter>(config)),
-      reassembler_(std::make_unique<TpReassembler>(config)) {
+      reassembler_(std::make_unique<TpReassembler>(config))
+{
 }
 
 TpManager::~TpManager() = default;
 
-bool TpManager::initialize() {
+bool TpManager::initialize()
+{
     // Initialization if needed
     return true;
 }
 
-void TpManager::shutdown() {
+void TpManager::shutdown()
+{
     std::scoped_lock lock(transfers_mutex_);
     active_transfers_.clear();
 }
 
-bool TpManager::needs_segmentation(const Message& message) const {
+bool TpManager::needs_segmentation(const Message& message) const
+{
     std::vector<uint8_t> data = message.serialize();
     return data.size() > config_.max_segment_size;
 }
 
-TpResult TpManager::segment_message(const Message& message, uint32_t& transfer_id) {
+TpResult TpManager::segment_message(const Message& message, uint32_t& transfer_id)
+{
     std::scoped_lock lock(transfers_mutex_);
 
     // Check if we have capacity for new transfers
@@ -53,8 +60,8 @@ TpResult TpManager::segment_message(const Message& message, uint32_t& transfer_i
 
     // Create new transfer
     transfer_id = next_transfer_id_++;
-    uint32_t message_id = (static_cast<uint32_t>(message.get_service_id()) << 16) |
-                         message.get_method_id();
+    uint32_t message_id =
+        (static_cast<uint32_t>(message.get_service_id()) << 16) | message.get_method_id();
 
     TpTransfer transfer(transfer_id, message_id);
 
@@ -75,7 +82,8 @@ TpResult TpManager::segment_message(const Message& message, uint32_t& transfer_i
     return TpResult::SUCCESS;
 }
 
-TpResult TpManager::get_next_segment(uint32_t transfer_id, TpSegment& segment) {
+TpResult TpManager::get_next_segment(uint32_t transfer_id, TpSegment& segment)
+{
     std::scoped_lock lock(transfers_mutex_);
 
     auto it = active_transfers_.find(transfer_id);
@@ -87,7 +95,7 @@ TpResult TpManager::get_next_segment(uint32_t transfer_id, TpSegment& segment) {
 
     if (transfer.next_segment_to_send >= transfer.segments.size()) {
         transfer.state = TpTransferState::COMPLETE;
-        segment = TpSegment();  // Clear the segment
+        segment = TpSegment();     // Clear the segment
         return TpResult::SUCCESS;  // No more segments
     }
 
@@ -100,7 +108,9 @@ TpResult TpManager::get_next_segment(uint32_t transfer_id, TpSegment& segment) {
     return TpResult::SUCCESS;
 }
 
-bool TpManager::handle_received_segment(const TpSegment& segment, std::vector<uint8_t>& complete_message) {
+bool TpManager::handle_received_segment(const TpSegment& segment,
+                                        std::vector<uint8_t>& complete_message)
+{
     // Update statistics
     statistics_.segments_received++;
 
@@ -114,7 +124,9 @@ bool TpManager::handle_received_segment(const TpSegment& segment, std::vector<ui
     return reassembler_->process_segment(segment, complete_message);
 }
 
-TpResult TpManager::acknowledge_segments(uint32_t transfer_id, const std::vector<uint16_t>& segments_acknowledged) {
+TpResult TpManager::acknowledge_segments(uint32_t transfer_id,
+                                         const std::vector<uint16_t>& segments_acknowledged)
+{
     std::scoped_lock lock(transfers_mutex_);
 
     auto it = active_transfers_.find(transfer_id);
@@ -129,7 +141,8 @@ TpResult TpManager::acknowledge_segments(uint32_t transfer_id, const std::vector
     return TpResult::SUCCESS;
 }
 
-TpResult TpManager::cancel_transfer(uint32_t transfer_id) {
+TpResult TpManager::cancel_transfer(uint32_t transfer_id)
+{
     std::scoped_lock lock(transfers_mutex_);
 
     auto it = active_transfers_.find(transfer_id);
@@ -143,7 +156,8 @@ TpResult TpManager::cancel_transfer(uint32_t transfer_id) {
     return TpResult::SUCCESS;
 }
 
-TpTransferState TpManager::get_transfer_status(uint32_t transfer_id) const {
+TpTransferState TpManager::get_transfer_status(uint32_t transfer_id) const
+{
     std::scoped_lock lock(transfers_mutex_);
 
     auto it = active_transfers_.find(transfer_id);
@@ -154,27 +168,31 @@ TpTransferState TpManager::get_transfer_status(uint32_t transfer_id) const {
     return it->second.state;
 }
 
-void TpManager::set_completion_callback(TpCompletionCallback callback) {
+void TpManager::set_completion_callback(TpCompletionCallback callback)
+{
     completion_callback_ = std::move(callback);
 }
 
-void TpManager::set_progress_callback(TpProgressCallback callback) {
+void TpManager::set_progress_callback(TpProgressCallback callback)
+{
     progress_callback_ = std::move(callback);
 }
 
-void TpManager::set_message_callback(TpMessageCallback callback) {
+void TpManager::set_message_callback(TpMessageCallback callback)
+{
     message_callback_ = std::move(callback);
 }
 
-void TpManager::process_timeouts() {
+void TpManager::process_timeouts()
+{
     std::scoped_lock lock(transfers_mutex_);
 
     auto now = std::chrono::steady_clock::now();
 
-    for (auto it = active_transfers_.begin(); it != active_transfers_.end(); ) {
+    for (auto it = active_transfers_.begin(); it != active_transfers_.end();) {
         TpTransfer& transfer = it->second;
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - transfer.last_activity);
+        auto elapsed =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now - transfer.last_activity);
 
         if (elapsed > config_.reassembly_timeout) {
             transfer.state = TpTransferState::TIMEOUT;
@@ -185,7 +203,8 @@ void TpManager::process_timeouts() {
             }
 
             it = active_transfers_.erase(it);
-        } else {
+        }
+        else {
             ++it;
         }
     }
@@ -197,26 +216,30 @@ void TpManager::process_timeouts() {
     cleanup_completed_transfers();
 }
 
-TpStatistics TpManager::get_statistics() const {
+TpStatistics TpManager::get_statistics() const
+{
     return statistics_;
 }
 
-void TpManager::update_config(const TpConfig& config) {
+void TpManager::update_config(const TpConfig& config)
+{
     config_ = config;
     segmenter_->update_config(config);
     reassembler_->update_config(config);
 }
 
-void TpManager::cleanup_completed_transfers() {
-    for (auto it = active_transfers_.begin(); it != active_transfers_.end(); ) {
+void TpManager::cleanup_completed_transfers()
+{
+    for (auto it = active_transfers_.begin(); it != active_transfers_.end();) {
         if (it->second.state == TpTransferState::COMPLETE ||
             it->second.state == TpTransferState::FAILED) {
             it = active_transfers_.erase(it);
-        } else {
+        }
+        else {
             ++it;
         }
     }
 }
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip

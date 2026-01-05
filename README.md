@@ -151,7 +151,8 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 
 # Run the demo
-./bin/simple_message_demo
+./bin/hello_world_server
+./bin/hello_world_client #execute from another terminal
 ```
 
 Expected output shows complete SOME/IP message lifecycle:

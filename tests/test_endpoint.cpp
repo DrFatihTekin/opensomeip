@@ -18,24 +18,28 @@
 // TODO: Implement when transport layer is complete
 
 class EndpointTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         // TODO: Setup test fixtures when transport is implemented
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // TODO: Cleanup test fixtures when transport is implemented
     }
 };
 
 // TODO: Add actual endpoint tests when transport functionality is implemented
-TEST_F(EndpointTest, PlaceholderTest) {
+TEST_F(EndpointTest, PlaceholderTest)
+{
     // This is a placeholder test that always passes
     // Remove this and add real tests when transport layer is implemented
     EXPECT_TRUE(true);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -12,39 +12,43 @@
  ********************************************************************************/
 
 #include "sd/sd_server.h"
-#include "sd/sd_message.h"
-#include "transport/udp_transport.h"
-#include "transport/endpoint.h"
-#include "transport/transport.h"
-#include "someip/message.h"
-#include <unordered_map>
-#include <mutex>
-#include <atomic>
-#include <thread>
-#include <chrono>
+
 #include <algorithm>
 #include <arpa/inet.h>
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
+
+#include "sd/sd_message.h"
+#include "someip/message.h"
+#include "transport/endpoint.h"
+#include "transport/transport.h"
+#include "transport/udp_transport.h"
 
 namespace someip {
 namespace sd {
 
 class SdServerImpl : public transport::ITransportListener {
-public:
+   public:
     SdServerImpl(const SdConfig& config)
         : config_(config),
           transport_(std::make_shared<transport::UdpTransport>(
               transport::Endpoint(config.unicast_address, config.unicast_port))),
           running_(false),
-          next_offer_delay_(config.initial_delay) {
-
+          next_offer_delay_(config.initial_delay)
+    {
         transport_->set_listener(this);
     }
 
-    ~SdServerImpl() {
+    ~SdServerImpl()
+    {
         shutdown();
     }
 
-    bool initialize() {
+    bool initialize()
+    {
         if (running_) {
             return true;
         }
@@ -67,7 +71,8 @@ public:
         return true;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         if (!running_) {
             return;
         }
@@ -90,18 +95,17 @@ public:
         transport_->stop();
     }
 
-    bool offer_service(const ServiceInstance& instance,
-                      const std::string& unicast_endpoint,
-                      const std::string& multicast_endpoint) {
-
+    bool offer_service(const ServiceInstance& instance, const std::string& unicast_endpoint,
+                       const std::string& multicast_endpoint)
+    {
         std::scoped_lock lock(offered_services_mutex_);
 
         // Check if service already offered
         auto it = std::find_if(offered_services_.begin(), offered_services_.end(),
-            [&](const OfferedService& svc) {
-                return svc.instance.service_id == instance.service_id &&
-                       svc.instance.instance_id == instance.instance_id;
-            });
+                               [&](const OfferedService& svc) {
+                                   return svc.instance.service_id == instance.service_id &&
+                                          svc.instance.instance_id == instance.instance_id;
+                               });
 
         if (it != offered_services_.end()) {
             return false;  // Already offered
@@ -121,14 +125,15 @@ public:
         return true;
     }
 
-    bool stop_offer_service(uint16_t service_id, uint16_t instance_id) {
+    bool stop_offer_service(uint16_t service_id, uint16_t instance_id)
+    {
         std::scoped_lock lock(offered_services_mutex_);
 
         auto it = std::find_if(offered_services_.begin(), offered_services_.end(),
-            [&](const OfferedService& svc) {
-                return svc.instance.service_id == service_id &&
-                       svc.instance.instance_id == instance_id;
-            });
+                               [&](const OfferedService& svc) {
+                                   return svc.instance.service_id == service_id &&
+                                          svc.instance.instance_id == instance_id;
+                               });
 
         if (it == offered_services_.end()) {
             return false;
@@ -141,14 +146,15 @@ public:
         return true;
     }
 
-    bool update_service_ttl(uint16_t service_id, uint16_t instance_id, uint32_t ttl_seconds) {
+    bool update_service_ttl(uint16_t service_id, uint16_t instance_id, uint32_t ttl_seconds)
+    {
         std::scoped_lock lock(offered_services_mutex_);
 
         auto it = std::find_if(offered_services_.begin(), offered_services_.end(),
-            [&](const OfferedService& svc) {
-                return svc.instance.service_id == service_id &&
-                       svc.instance.instance_id == instance_id;
-            });
+                               [&](const OfferedService& svc) {
+                                   return svc.instance.service_id == service_id &&
+                                          svc.instance.instance_id == instance_id;
+                               });
 
         if (it == offered_services_.end()) {
             return false;
@@ -159,12 +165,13 @@ public:
     }
 
     bool handle_eventgroup_subscription(uint16_t service_id, uint16_t instance_id,
-                                       uint16_t eventgroup_id, const std::string& client_address,
-                                       bool acknowledge) {
-
+                                        uint16_t eventgroup_id, const std::string& client_address,
+                                        bool acknowledge)
+    {
         // Create subscription response
-        auto response_entry = std::make_unique<EventGroupEntry>(
-            acknowledge ? EntryType::SUBSCRIBE_EVENTGROUP_ACK : EntryType::SUBSCRIBE_EVENTGROUP_NACK);
+        auto response_entry =
+            std::make_unique<EventGroupEntry>(acknowledge ? EntryType::SUBSCRIBE_EVENTGROUP_ACK
+                                                          : EntryType::SUBSCRIBE_EVENTGROUP_NACK);
         response_entry->set_service_id(service_id);
         response_entry->set_instance_id(instance_id);
         response_entry->set_eventgroup_id(eventgroup_id);
@@ -202,7 +209,7 @@ public:
 
         // Create SOME/IP message for SD
         Message someip_message(MessageId(0xFFFF, 0x0000), RequestId(0x0000, 0x0000),
-                              MessageType::NOTIFICATION, ReturnCode::E_OK);
+                               MessageType::NOTIFICATION, ReturnCode::E_OK);
         someip_message.set_payload(response_message.serialize());
 
         // Send the ACK message
@@ -210,7 +217,8 @@ public:
         return result == Result::SUCCESS;
     }
 
-    std::vector<ServiceInstance> get_offered_services() const {
+    std::vector<ServiceInstance> get_offered_services() const
+    {
         std::scoped_lock lock(offered_services_mutex_);
         std::vector<ServiceInstance> result;
 
@@ -221,16 +229,18 @@ public:
         return result;
     }
 
-    bool is_ready() const {
+    bool is_ready() const
+    {
         return running_ && transport_->is_connected();
     }
 
-    SdServer::Statistics get_statistics() const {
+    SdServer::Statistics get_statistics() const
+    {
         // TODO: Implement statistics tracking
         return SdServer::Statistics{};
     }
 
-private:
+   private:
     struct OfferedService {
         ServiceInstance instance;
         std::string unicast_endpoint;
@@ -238,7 +248,8 @@ private:
         std::chrono::steady_clock::time_point last_offer_time;
     };
 
-    bool join_multicast_group() {
+    bool join_multicast_group()
+    {
         auto udp_transport = std::dynamic_pointer_cast<transport::UdpTransport>(transport_);
         if (!udp_transport) {
             return false;
@@ -248,14 +259,16 @@ private:
         return udp_transport->join_multicast_group("224.224.224.245") == Result::SUCCESS;
     }
 
-    void leave_multicast_group() {
+    void leave_multicast_group()
+    {
         auto udp_transport = std::dynamic_pointer_cast<transport::UdpTransport>(transport_);
         if (udp_transport) {
             udp_transport->leave_multicast_group("224.224.224.245");
         }
     }
 
-    void start_offer_timer() {
+    void start_offer_timer()
+    {
         if (offer_timer_thread_.joinable()) {
             return;
         }
@@ -275,19 +288,21 @@ private:
                 if (next_offer_delay_ < config_.repetition_max) {
                     next_offer_delay_ = std::chrono::milliseconds(
                         std::min(next_offer_delay_.count() * config_.repetition_multiplier,
-                                config_.repetition_max.count()));
+                                 config_.repetition_max.count()));
                 }
             }
         });
     }
 
-    void stop_offer_timer() {
+    void stop_offer_timer()
+    {
         if (offer_timer_thread_.joinable()) {
             offer_timer_thread_.join();
         }
     }
 
-    void send_periodic_offers() {
+    void send_periodic_offers()
+    {
         std::scoped_lock lock(offered_services_mutex_);
 
         auto now = std::chrono::steady_clock::now();
@@ -302,7 +317,8 @@ private:
         }
     }
 
-    void send_stop_offer_messages() {
+    void send_stop_offer_messages()
+    {
         std::scoped_lock lock(offered_services_mutex_);
 
         for (const auto& service : offered_services_) {
@@ -310,7 +326,8 @@ private:
         }
     }
 
-    void send_service_offer(const OfferedService& service) {
+    void send_service_offer(const OfferedService& service)
+    {
         // Create offer service entry
         auto offer_entry = std::make_unique<ServiceEntry>(EntryType::OFFER_SERVICE);
         offer_entry->set_service_id(service.instance.service_id);
@@ -346,7 +363,7 @@ private:
 
         // Create SOME/IP message for SD
         Message someip_message(MessageId(0xFFFF, 0x0000), RequestId(0x0000, 0x0000),
-                              MessageType::NOTIFICATION, ReturnCode::E_OK);
+                               MessageType::NOTIFICATION, ReturnCode::E_OK);
         someip_message.set_payload(sd_message.serialize());
 
         // Send multicast offer
@@ -357,7 +374,8 @@ private:
         }
     }
 
-    void send_service_stop_offer(const OfferedService& service) {
+    void send_service_stop_offer(const OfferedService& service)
+    {
         // Create stop offer service entry
         auto stop_entry = std::make_unique<ServiceEntry>(EntryType::STOP_OFFER_SERVICE);
         stop_entry->set_service_id(service.instance.service_id);
@@ -370,7 +388,7 @@ private:
 
         // Create SOME/IP message for SD
         Message someip_message(MessageId(0xFFFF, 0x0000), RequestId(0x0000, 0x0000),
-                              MessageType::NOTIFICATION, ReturnCode::E_OK);
+                               MessageType::NOTIFICATION, ReturnCode::E_OK);
         someip_message.set_payload(sd_message.serialize());
 
         // Send multicast stop offer
@@ -381,7 +399,8 @@ private:
         }
     }
 
-    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override {
+    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override
+    {
         // Check if this is an SD message (service ID 0xFFFF)
         if (message->get_service_id() != 0xFFFF) {
             return;
@@ -397,19 +416,23 @@ private:
         process_sd_entries(sd_message, sender);
     }
 
-    void on_connection_lost(const transport::Endpoint& endpoint) override {
+    void on_connection_lost(const transport::Endpoint& endpoint) override
+    {
         // TODO: Handle connection loss
     }
 
-    void on_connection_established(const transport::Endpoint& endpoint) override {
+    void on_connection_established(const transport::Endpoint& endpoint) override
+    {
         // TODO: Handle connection establishment
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         // TODO: Handle transport errors
     }
 
-    void process_sd_entries(const SdMessage& message, const transport::Endpoint& sender) {
+    void process_sd_entries(const SdMessage& message, const transport::Endpoint& sender)
+    {
         for (const auto& entry : message.get_entries()) {
             switch (entry->get_type()) {
                 case EntryType::FIND_SERVICE:
@@ -426,7 +449,8 @@ private:
         }
     }
 
-    void handle_find_service(const ServiceEntry& find_entry, const transport::Endpoint& sender) {
+    void handle_find_service(const ServiceEntry& find_entry, const transport::Endpoint& sender)
+    {
         std::scoped_lock lock(offered_services_mutex_);
 
         // Check if we offer the requested service
@@ -434,7 +458,6 @@ private:
             if (service.instance.service_id == find_entry.get_service_id() &&
                 (find_entry.get_instance_id() == 0xFFFF ||  // Any instance
                  service.instance.instance_id == find_entry.get_instance_id())) {
-
                 // Send unicast offer to the finder
                 send_service_offer_to_client(service, sender);
                 break;
@@ -443,8 +466,9 @@ private:
     }
 
     void handle_eventgroup_subscription_request(const EventGroupEntry& subscription_entry,
-                                               const SdMessage& message,
-                                               const transport::Endpoint& sender) {
+                                                const SdMessage& message,
+                                                const transport::Endpoint& sender)
+    {
         // Extract client endpoint from options
         std::string client_ip = sender.get_address();
         uint16_t client_port = sender.get_port();
@@ -468,15 +492,16 @@ private:
         // For now, acknowledge all subscription requests
 
         handle_eventgroup_subscription(
-            subscription_entry.get_service_id(),
-            subscription_entry.get_instance_id(),
+            subscription_entry.get_service_id(), subscription_entry.get_instance_id(),
             subscription_entry.get_eventgroup_id(),
             client_ip + ":" + std::to_string(client_port),  // Pass full endpoint
-            true  // Acknowledge
+            true                                            // Acknowledge
         );
     }
 
-    void send_service_offer_to_client(const OfferedService& service, const transport::Endpoint& client) {
+    void send_service_offer_to_client(const OfferedService& service,
+                                      const transport::Endpoint& client)
+    {
         // Create unicast offer message (similar to multicast but unicast)
         auto offer_entry = std::make_unique<ServiceEntry>(EntryType::OFFER_SERVICE);
         offer_entry->set_service_id(service.instance.service_id);
@@ -513,7 +538,7 @@ private:
 
         // Create SOME/IP message for SD
         Message someip_message(MessageId(0xFFFF, 0x0000), RequestId(0x0000, 0x0000),
-                              MessageType::NOTIFICATION, ReturnCode::E_OK);
+                               MessageType::NOTIFICATION, ReturnCode::E_OK);
         someip_message.set_payload(sd_message.serialize());
 
         // Send unicast offer to client
@@ -535,52 +560,60 @@ private:
 };
 
 // SdServer implementation
-SdServer::SdServer(const SdConfig& config)
-    : impl_(std::make_unique<SdServerImpl>(config)) {
+SdServer::SdServer(const SdConfig& config) : impl_(std::make_unique<SdServerImpl>(config))
+{
 }
 
 SdServer::~SdServer() = default;
 
-bool SdServer::initialize() {
+bool SdServer::initialize()
+{
     return impl_->initialize();
 }
 
-void SdServer::shutdown() {
+void SdServer::shutdown()
+{
     impl_->shutdown();
 }
 
-bool SdServer::offer_service(const ServiceInstance& instance,
-                            const std::string& unicast_endpoint,
-                            const std::string& multicast_endpoint) {
+bool SdServer::offer_service(const ServiceInstance& instance, const std::string& unicast_endpoint,
+                             const std::string& multicast_endpoint)
+{
     return impl_->offer_service(instance, unicast_endpoint, multicast_endpoint);
 }
 
-bool SdServer::stop_offer_service(uint16_t service_id, uint16_t instance_id) {
+bool SdServer::stop_offer_service(uint16_t service_id, uint16_t instance_id)
+{
     return impl_->stop_offer_service(service_id, instance_id);
 }
 
-bool SdServer::update_service_ttl(uint16_t service_id, uint16_t instance_id, uint32_t ttl_seconds) {
+bool SdServer::update_service_ttl(uint16_t service_id, uint16_t instance_id, uint32_t ttl_seconds)
+{
     return impl_->update_service_ttl(service_id, instance_id, ttl_seconds);
 }
 
 bool SdServer::handle_eventgroup_subscription(uint16_t service_id, uint16_t instance_id,
-                                             uint16_t eventgroup_id, const std::string& client_address,
-                                             bool acknowledge) {
+                                              uint16_t eventgroup_id,
+                                              const std::string& client_address, bool acknowledge)
+{
     return impl_->handle_eventgroup_subscription(service_id, instance_id, eventgroup_id,
-                                                client_address, acknowledge);
+                                                 client_address, acknowledge);
 }
 
-std::vector<ServiceInstance> SdServer::get_offered_services() const {
+std::vector<ServiceInstance> SdServer::get_offered_services() const
+{
     return impl_->get_offered_services();
 }
 
-bool SdServer::is_ready() const {
+bool SdServer::is_ready() const
+{
     return impl_->is_ready();
 }
 
-SdServer::Statistics SdServer::get_statistics() const {
+SdServer::Statistics SdServer::get_statistics() const
+{
     return impl_->get_statistics();
 }
 
-} // namespace sd
-} // namespace someip
+}  // namespace sd
+}  // namespace someip

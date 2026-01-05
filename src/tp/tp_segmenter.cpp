@@ -12,20 +12,23 @@
  ********************************************************************************/
 
 #include "tp/tp_segmenter.h"
-#include "someip/message.h"
+
 #include <algorithm>
 #include <iostream>
+
+#include "someip/message.h"
 
 namespace someip {
 namespace tp {
 
-TpSegmenter::TpSegmenter(const TpConfig& config)
-    : config_(config) {
+TpSegmenter::TpSegmenter(const TpConfig& config) : config_(config)
+{
 }
 
 TpSegmenter::~TpSegmenter() = default;
 
-TpResult TpSegmenter::segment_message(const Message& message, std::vector<TpSegment>& segments) {
+TpResult TpSegmenter::segment_message(const Message& message, std::vector<TpSegment>& segments)
+{
     // Get the message payload (without headers - TP handles payload only)
     const std::vector<uint8_t>& payload = message.get_payload();
 
@@ -55,9 +58,9 @@ TpResult TpSegmenter::segment_message(const Message& message, std::vector<TpSegm
 }
 
 TpResult TpSegmenter::create_multi_segments(const Message& message,
-                                          const std::vector<uint8_t>& payload,
-                                          std::vector<TpSegment>& segments) {
-
+                                            const std::vector<uint8_t>& payload,
+                                            std::vector<TpSegment>& segments)
+{
     uint32_t total_length = static_cast<uint32_t>(payload.size());
     uint16_t payload_offset = 0;  // Offset into the payload data
     uint8_t sequence_number = next_sequence_number_++;
@@ -75,7 +78,7 @@ TpResult TpSegmenter::create_multi_segments(const Message& message,
 
         // Add first part of payload
         size_t first_payload_size = std::min(static_cast<size_t>(config_.max_segment_size - 16),
-                                           static_cast<size_t>(total_length));
+                                             static_cast<size_t>(total_length));
         header.insert(header.end(), payload.begin(), payload.begin() + first_payload_size);
 
         segment.header.segment_length = static_cast<uint16_t>(header.size());
@@ -93,7 +96,8 @@ TpResult TpSegmenter::create_multi_segments(const Message& message,
         uint32_t remaining_bytes = total_length - payload_offset;
         if (remaining_bytes <= config_.max_segment_size) {
             segment.header.message_type = TpMessageType::LAST_SEGMENT;
-        } else {
+        }
+        else {
             segment.header.message_type = TpMessageType::CONSECUTIVE_SEGMENT;
         }
 
@@ -105,10 +109,9 @@ TpResult TpSegmenter::create_multi_segments(const Message& message,
         uint16_t payload_size = static_cast<uint16_t>(
             std::min(static_cast<uint32_t>(config_.max_segment_size), remaining_bytes));
 
-
         segment.header.segment_length = payload_size;
         segment.payload.assign(payload.begin() + payload_offset,
-                              payload.begin() + payload_offset + payload_size);
+                               payload.begin() + payload_offset + payload_size);
 
         segments.push_back(std::move(segment));
         payload_offset += payload_size;
@@ -119,9 +122,10 @@ TpResult TpSegmenter::create_multi_segments(const Message& message,
     return TpResult::SUCCESS;
 }
 
-void TpSegmenter::update_config(const TpConfig& config) {
+void TpSegmenter::update_config(const TpConfig& config)
+{
     config_ = config;
 }
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip

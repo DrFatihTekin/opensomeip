@@ -12,16 +12,19 @@
  ********************************************************************************/
 
 #include "sd/sd_message.h"
-#include "serialization/serializer.h"
+
 #include <algorithm>
 #include <arpa/inet.h>
 #include <iostream>
+
+#include "serialization/serializer.h"
 
 namespace someip {
 namespace sd {
 
 // SdEntry serialization/deserialization
-std::vector<uint8_t> SdEntry::serialize() const {
+std::vector<uint8_t> SdEntry::serialize() const
+{
     std::vector<uint8_t> data;
     data.reserve(16);  // SD entry is 16 bytes
 
@@ -60,7 +63,8 @@ std::vector<uint8_t> SdEntry::serialize() const {
     return data;
 }
 
-bool SdEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
+bool SdEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset)
+{
     if (offset + 16 > data.size()) {
         return false;
     }
@@ -75,7 +79,8 @@ bool SdEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
 }
 
 // ServiceEntry implementation
-std::vector<uint8_t> ServiceEntry::serialize() const {
+std::vector<uint8_t> ServiceEntry::serialize() const
+{
     std::vector<uint8_t> data = SdEntry::serialize();
 
     // Override the service ID field (bytes 4-5)
@@ -92,7 +97,8 @@ std::vector<uint8_t> ServiceEntry::serialize() const {
     return data;
 }
 
-bool ServiceEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
+bool ServiceEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset)
+{
     if (!SdEntry::deserialize(data, offset)) {
         return false;
     }
@@ -104,15 +110,16 @@ bool ServiceEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset)
     service_id_ = (data[offset] << 8) | data[offset + 1];
     instance_id_ = (data[offset + 2] << 8) | data[offset + 3];
     major_version_ = data[offset + 4];
-    ttl_ = (data[offset + 5] << 24) | (data[offset + 6] << 16) |
-           (data[offset + 7] << 8) | data[offset + 8];
+    ttl_ = (data[offset + 5] << 24) | (data[offset + 6] << 16) | (data[offset + 7] << 8) |
+           data[offset + 8];
 
     offset += 9;
     return true;
 }
 
 // EventGroupEntry implementation
-std::vector<uint8_t> EventGroupEntry::serialize() const {
+std::vector<uint8_t> EventGroupEntry::serialize() const
+{
     std::vector<uint8_t> data = SdEntry::serialize();
 
     // Override the service ID field (bytes 4-5)
@@ -133,7 +140,8 @@ std::vector<uint8_t> EventGroupEntry::serialize() const {
     return data;
 }
 
-bool EventGroupEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
+bool EventGroupEntry::deserialize(const std::vector<uint8_t>& data, size_t& offset)
+{
     if (!SdEntry::deserialize(data, offset)) {
         return false;
     }
@@ -145,8 +153,8 @@ bool EventGroupEntry::deserialize(const std::vector<uint8_t>& data, size_t& offs
     service_id_ = (data[offset] << 8) | data[offset + 1];
     instance_id_ = (data[offset + 2] << 8) | data[offset + 3];
     major_version_ = data[offset + 4];
-    ttl_ = (data[offset + 5] << 24) | (data[offset + 6] << 16) |
-           (data[offset + 7] << 8) | data[offset + 8];
+    ttl_ = (data[offset + 5] << 24) | (data[offset + 6] << 16) | (data[offset + 7] << 8) |
+           data[offset + 8];
     eventgroup_id_ = (data[offset + 9] << 8) | data[offset + 10];
 
     offset += 11;
@@ -154,7 +162,8 @@ bool EventGroupEntry::deserialize(const std::vector<uint8_t>& data, size_t& offs
 }
 
 // SdOption serialization/deserialization
-std::vector<uint8_t> SdOption::serialize() const {
+std::vector<uint8_t> SdOption::serialize() const
+{
     std::vector<uint8_t> data;
 
     // Length (2 bytes)
@@ -170,7 +179,8 @@ std::vector<uint8_t> SdOption::serialize() const {
     return data;
 }
 
-bool SdOption::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
+bool SdOption::deserialize(const std::vector<uint8_t>& data, size_t& offset)
+{
     if (offset + 4 > data.size()) {
         return false;
     }
@@ -185,7 +195,8 @@ bool SdOption::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
 }
 
 // IPv4EndpointOption implementation
-std::vector<uint8_t> IPv4EndpointOption::serialize() const {
+std::vector<uint8_t> IPv4EndpointOption::serialize() const
+{
     std::vector<uint8_t> data = SdOption::serialize();
 
     // IPv4 Address (4 bytes, network byte order)
@@ -214,7 +225,8 @@ std::vector<uint8_t> IPv4EndpointOption::serialize() const {
     return data;
 }
 
-bool IPv4EndpointOption::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
+bool IPv4EndpointOption::deserialize(const std::vector<uint8_t>& data, size_t& offset)
+{
     if (!SdOption::deserialize(data, offset)) {
         return false;
     }
@@ -224,8 +236,8 @@ bool IPv4EndpointOption::deserialize(const std::vector<uint8_t>& data, size_t& o
     }
 
     // IPv4 Address (4 bytes, network byte order)
-    ipv4_address_ = (data[offset] << 24) | (data[offset + 1] << 16) |
-                   (data[offset + 2] << 8) | data[offset + 3];
+    ipv4_address_ = (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) |
+                    data[offset + 3];
     offset += 4;
 
     // Skip reserved byte
@@ -242,17 +254,20 @@ bool IPv4EndpointOption::deserialize(const std::vector<uint8_t>& data, size_t& o
     return true;
 }
 
-void IPv4EndpointOption::set_ipv4_address_from_string(const std::string& ip_address) {
+void IPv4EndpointOption::set_ipv4_address_from_string(const std::string& ip_address)
+{
     struct in_addr addr;
     if (inet_pton(AF_INET, ip_address.c_str(), &addr) == 1) {
         // inet_pton gives us network byte order, store as-is
         ipv4_address_ = addr.s_addr;
-    } else {
+    }
+    else {
         ipv4_address_ = 0;
     }
 }
 
-std::string IPv4EndpointOption::get_ipv4_address_string() const {
+std::string IPv4EndpointOption::get_ipv4_address_string() const
+{
     char buffer[INET_ADDRSTRLEN];
     struct in_addr addr;
     addr.s_addr = ipv4_address_;  // Already in network byte order
@@ -261,7 +276,8 @@ std::string IPv4EndpointOption::get_ipv4_address_string() const {
 }
 
 // IPv4MulticastOption implementation
-std::vector<uint8_t> IPv4MulticastOption::serialize() const {
+std::vector<uint8_t> IPv4MulticastOption::serialize() const
+{
     std::vector<uint8_t> data = SdOption::serialize();
 
     // IPv4 Address (4 bytes)
@@ -285,7 +301,8 @@ std::vector<uint8_t> IPv4MulticastOption::serialize() const {
     return data;
 }
 
-bool IPv4MulticastOption::deserialize(const std::vector<uint8_t>& data, size_t& offset) {
+bool IPv4MulticastOption::deserialize(const std::vector<uint8_t>& data, size_t& offset)
+{
     if (!SdOption::deserialize(data, offset)) {
         return false;
     }
@@ -294,8 +311,8 @@ bool IPv4MulticastOption::deserialize(const std::vector<uint8_t>& data, size_t& 
         return false;
     }
 
-    ipv4_address_ = (data[offset] << 24) | (data[offset + 1] << 16) |
-                   (data[offset + 2] << 8) | data[offset + 3];
+    ipv4_address_ = (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) |
+                    data[offset + 3];
     offset += 5;  // Skip address + reserved
     port_ = (data[offset] << 8) | data[offset + 1];
     offset += 2;
@@ -304,15 +321,18 @@ bool IPv4MulticastOption::deserialize(const std::vector<uint8_t>& data, size_t& 
 }
 
 // SdMessage implementation
-void SdMessage::add_entry(std::unique_ptr<SdEntry> entry) {
+void SdMessage::add_entry(std::unique_ptr<SdEntry> entry)
+{
     entries_.push_back(std::move(entry));
 }
 
-void SdMessage::add_option(std::unique_ptr<SdOption> option) {
+void SdMessage::add_option(std::unique_ptr<SdOption> option)
+{
     options_.push_back(std::move(option));
 }
 
-std::vector<uint8_t> SdMessage::serialize() const {
+std::vector<uint8_t> SdMessage::serialize() const
+{
     std::vector<uint8_t> data;
 
     // SOME/IP SD Header (8 bytes)
@@ -353,7 +373,8 @@ std::vector<uint8_t> SdMessage::serialize() const {
     return data;
 }
 
-bool SdMessage::deserialize(const std::vector<uint8_t>& data) {
+bool SdMessage::deserialize(const std::vector<uint8_t>& data)
+{
     if (data.size() < 8) {
         return false;
     }
@@ -365,8 +386,8 @@ bool SdMessage::deserialize(const std::vector<uint8_t>& data) {
     reserved_ = (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
     offset += 3;
 
-    uint32_t length = (data[offset] << 24) | (data[offset + 1] << 16) |
-                     (data[offset + 2] << 8) | data[offset + 3];
+    uint32_t length = (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) |
+                      data[offset + 3];
     offset += 4;
 
     if (offset + length > data.size()) {
@@ -374,7 +395,7 @@ bool SdMessage::deserialize(const std::vector<uint8_t>& data) {
     }
 
     // Parse entries and options until we consume all data
-    size_t max_iterations = 100; // Prevent infinite loops
+    size_t max_iterations = 100;  // Prevent infinite loops
     size_t iteration = 0;
 
     while (offset < 8 + length && offset < data.size() && iteration < max_iterations) {
@@ -386,34 +407,36 @@ bool SdMessage::deserialize(const std::vector<uint8_t>& data) {
         EntryType entry_type = static_cast<EntryType>(type_byte);
         uint8_t raw_entry_type = static_cast<uint8_t>(entry_type);
 
-        if (raw_entry_type == 0x00 || raw_entry_type == 0x01 ||
-            raw_entry_type == 0x06 || raw_entry_type == 0x07) {
-
+        if (raw_entry_type == 0x00 || raw_entry_type == 0x01 || raw_entry_type == 0x06 ||
+            raw_entry_type == 0x07) {
             // This is an entry
             std::unique_ptr<SdEntry> entry;
 
             if (raw_entry_type == 0x00 || raw_entry_type == 0x01) {
                 entry = std::make_unique<ServiceEntry>();
-            } else if (raw_entry_type == 0x06 || raw_entry_type == 0x07) {
+            }
+            else if (raw_entry_type == 0x06 || raw_entry_type == 0x07) {
                 entry = std::make_unique<EventGroupEntry>();
             }
 
             if (!entry || !entry->deserialize(data, offset)) {
-                return false; // Failed to parse entry
+                return false;  // Failed to parse entry
             }
 
             entries_.push_back(std::move(entry));
-
-        } else {
+        }
+        else {
             // This should be an option
             OptionType option_type = static_cast<OptionType>(type_byte);
             std::unique_ptr<SdOption> option;
 
             if (option_type == OptionType::IPV4_ENDPOINT) {
                 option = std::make_unique<IPv4EndpointOption>();
-            } else if (option_type == OptionType::IPV4_MULTICAST) {
+            }
+            else if (option_type == OptionType::IPV4_MULTICAST) {
                 option = std::make_unique<IPv4MulticastOption>();
-            } else {
+            }
+            else {
                 // Unknown option type - try to skip it
                 if (offset + 4 > data.size()) {
                     return false;
@@ -427,7 +450,7 @@ bool SdMessage::deserialize(const std::vector<uint8_t>& data) {
             }
 
             if (!option || !option->deserialize(data, offset)) {
-                return false; // Failed to parse option
+                return false;  // Failed to parse option
             }
 
             options_.push_back(std::move(option));
@@ -436,11 +459,11 @@ bool SdMessage::deserialize(const std::vector<uint8_t>& data) {
 
     // Check if we consumed all expected data
     if (offset != 8 + length) {
-        return false; // Didn't consume all data or overran
+        return false;  // Didn't consume all data or overran
     }
 
     return true;
 }
 
-} // namespace sd
-} // namespace someip
+}  // namespace sd
+}  // namespace someip

@@ -14,12 +14,13 @@
 #ifndef SOMEIP_TRANSPORT_TCP_TRANSPORT_H
 #define SOMEIP_TRANSPORT_TCP_TRANSPORT_H
 
-#include "transport/transport.h"
 #include <atomic>
-#include <thread>
+#include <condition_variable>
 #include <mutex>
 #include <queue>
-#include <condition_variable>
+#include <thread>
+
+#include "transport/transport.h"
 
 namespace someip {
 namespace transport {
@@ -27,12 +28,7 @@ namespace transport {
 /**
  * @brief TCP Connection State
  */
-enum class TcpConnectionState : uint8_t {
-    DISCONNECTED,
-    CONNECTING,
-    CONNECTED,
-    DISCONNECTING
-};
+enum class TcpConnectionState : uint8_t { DISCONNECTED, CONNECTING, CONNECTED, DISCONNECTING };
 
 /**
  * @brief TCP Connection Information
@@ -46,11 +42,13 @@ struct TcpConnection {
 
     TcpConnection() = default;
 
-    bool is_connected() const {
+    bool is_connected() const
+    {
         return state == TcpConnectionState::CONNECTED;
     }
 
-    void update_activity() {
+    void update_activity()
+    {
         last_activity = std::chrono::steady_clock::now();
     }
 };
@@ -59,13 +57,13 @@ struct TcpConnection {
  * @brief TCP Transport Configuration
  */
 struct TcpTransportConfig {
-    std::chrono::milliseconds connection_timeout{5000};     // Connection timeout
+    std::chrono::milliseconds connection_timeout{5000};    // Connection timeout
     std::chrono::milliseconds receive_timeout{100};        // Receive timeout
     std::chrono::milliseconds send_timeout{1000};          // Send timeout
-    size_t max_receive_buffer{65536};                       // Max receive buffer size
-    size_t max_connections{10};                             // Max concurrent connections
-    bool keep_alive{true};                                  // TCP keep-alive
-    std::chrono::milliseconds keep_alive_interval{30000};   // Keep-alive interval
+    size_t max_receive_buffer{65536};                      // Max receive buffer size
+    size_t max_connections{10};                            // Max concurrent connections
+    bool keep_alive{true};                                 // TCP keep-alive
+    std::chrono::milliseconds keep_alive_interval{30000};  // Keep-alive interval
 };
 
 /**
@@ -75,7 +73,7 @@ struct TcpTransportConfig {
  * using TCP sockets. Supports both client and server modes.
  */
 class TcpTransport : public ITransport {
-public:
+   public:
     /**
      * @brief Constructor
      * @param config TCP transport configuration
@@ -182,7 +180,7 @@ public:
      */
     int accept_connection();
 
-private:
+   private:
     TcpTransportConfig config_;
     Endpoint local_endpoint_;
     TcpConnection connection_;
@@ -223,7 +221,7 @@ private:
     static const size_t MAX_MESSAGE_SIZE = 65535;
 };
 
-} // namespace transport
-} // namespace someip
+}  // namespace transport
+}  // namespace someip
 
-#endif // SOMEIP_TRANSPORT_TCP_TRANSPORT_H
+#endif  // SOMEIP_TRANSPORT_TCP_TRANSPORT_H

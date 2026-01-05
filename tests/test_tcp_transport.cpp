@@ -11,26 +11,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
+#include <chrono>
 #include <gtest/gtest.h>
-#include <transport/tcp_transport.h>
-#include <transport/transport.h>
 #include <someip/message.h>
 #include <thread>
-#include <chrono>
+#include <transport/tcp_transport.h>
+#include <transport/transport.h>
 
 using namespace someip;
 using namespace someip::transport;
 
 class TcpTransportTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         config.max_receive_buffer = 8192;
         config.connection_timeout = std::chrono::milliseconds(2000);
         config.receive_timeout = std::chrono::milliseconds(100);
         config.send_timeout = std::chrono::milliseconds(1000);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // Clean up any running transports
     }
 
@@ -38,80 +40,88 @@ protected:
 };
 
 class TestTcpListener : public ITransportListener {
-public:
-    void on_message_received(MessagePtr message, const Endpoint& sender) override {
+   public:
+    void on_message_received(MessagePtr message, const Endpoint& sender) override
+    {
         std::scoped_lock lock(mutex_);
         received_messages_.push_back({message, sender});
         cv_.notify_one();
     }
 
-    void on_connection_lost(const Endpoint& endpoint) override {
+    void on_connection_lost(const Endpoint& endpoint) override
+    {
         std::scoped_lock lock(mutex_);
         connection_lost_ = true;
         lost_endpoint_ = endpoint;
         cv_.notify_one();
     }
 
-    void on_connection_established(const Endpoint& endpoint) override {
+    void on_connection_established(const Endpoint& endpoint) override
+    {
         std::scoped_lock lock(mutex_);
         connection_established_ = true;
         established_endpoint_ = endpoint;
         cv_.notify_one();
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         std::scoped_lock lock(mutex_);
         last_error_ = error;
         cv_.notify_one();
     }
 
-    bool wait_for_message(std::chrono::milliseconds timeout = std::chrono::milliseconds(1000)) {
+    bool wait_for_message(std::chrono::milliseconds timeout = std::chrono::milliseconds(1000))
+    {
         std::unique_lock<std::mutex> lock(mutex_);
-        return cv_.wait_for(lock, timeout, [this]() {
-            return !received_messages_.empty();
-        });
+        return cv_.wait_for(lock, timeout, [this]() { return !received_messages_.empty(); });
     }
 
-    bool wait_for_connection_lost(std::chrono::milliseconds timeout = std::chrono::milliseconds(1000)) {
+    bool wait_for_connection_lost(
+        std::chrono::milliseconds timeout = std::chrono::milliseconds(1000))
+    {
         std::unique_lock<std::mutex> lock(mutex_);
-        return cv_.wait_for(lock, timeout, [this]() {
-            return connection_lost_;
-        });
+        return cv_.wait_for(lock, timeout, [this]() { return connection_lost_; });
     }
 
-    bool wait_for_connection_established(std::chrono::milliseconds timeout = std::chrono::milliseconds(1000)) {
+    bool wait_for_connection_established(
+        std::chrono::milliseconds timeout = std::chrono::milliseconds(1000))
+    {
         std::unique_lock<std::mutex> lock(mutex_);
-        return cv_.wait_for(lock, timeout, [this]() {
-            return connection_established_;
-        });
+        return cv_.wait_for(lock, timeout, [this]() { return connection_established_; });
     }
 
-    std::vector<std::pair<MessagePtr, Endpoint>> get_received_messages() {
+    std::vector<std::pair<MessagePtr, Endpoint>> get_received_messages()
+    {
         std::scoped_lock lock(mutex_);
         return received_messages_;
     }
 
-    void clear_messages() {
+    void clear_messages()
+    {
         std::scoped_lock lock(mutex_);
         received_messages_.clear();
     }
 
-    bool get_connection_lost() const {
+    bool get_connection_lost() const
+    {
         std::scoped_lock lock(mutex_);
         return connection_lost_;
     }
 
-    bool get_connection_established() const {
+    bool get_connection_established() const
+    {
         std::scoped_lock lock(mutex_);
         return connection_established_;
     }
 
-    Result get_last_error() const {
+    Result get_last_error() const
+    {
         std::scoped_lock lock(mutex_);
         return last_error_;
     }
 
-private:
+   private:
     mutable std::mutex mutex_;
     std::condition_variable cv_;
     std::vector<std::pair<MessagePtr, Endpoint>> received_messages_;
@@ -122,7 +132,8 @@ private:
     Result last_error_ = Result::SUCCESS;
 };
 
-TEST_F(TcpTransportTest, Initialization) {
+TEST_F(TcpTransportTest, Initialization)
+{
     TcpTransport transport(config);
     Endpoint local_endpoint("127.0.0.1", 0);  // Auto-assign port
 
@@ -137,7 +148,8 @@ TEST_F(TcpTransportTest, Initialization) {
     ASSERT_FALSE(transport.is_running());
 }
 
-TEST_F(TcpTransportTest, ServerModeSetup) {
+TEST_F(TcpTransportTest, ServerModeSetup)
+{
     TcpTransport transport(config);
     Endpoint local_endpoint("127.0.0.1", 30501);
 
@@ -155,7 +167,8 @@ TEST_F(TcpTransportTest, ServerModeSetup) {
     transport.stop();
 }
 
-TEST_F(TcpTransportTest, ClientConnectionTimeout) {
+TEST_F(TcpTransportTest, ClientConnectionTimeout)
+{
     TcpTransport transport(config);
     Endpoint local_endpoint("127.0.0.1", 0);
 
@@ -176,10 +189,11 @@ TEST_F(TcpTransportTest, ClientConnectionTimeout) {
     transport.stop();
 }
 
-TEST_F(TcpTransportTest, MessageSerialization) {
+TEST_F(TcpTransportTest, MessageSerialization)
+{
     // Test that TCP transport properly handles message serialization
     Message original_message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001),
-                           MessageType::REQUEST, ReturnCode::E_OK);
+                             MessageType::REQUEST, ReturnCode::E_OK);
     std::vector<uint8_t> test_payload = {0x01, 0x02, 0x03, 0x04};
     original_message.set_payload(test_payload);
 
@@ -195,11 +209,13 @@ TEST_F(TcpTransportTest, MessageSerialization) {
     ASSERT_EQ(serialized[3], 0x78);
 
     // Length field (big-endian) - payload size + 8
-    uint32_t length_field = (serialized[4] << 24) | (serialized[5] << 16) | (serialized[6] << 8) | serialized[7];
+    uint32_t length_field =
+        (serialized[4] << 24) | (serialized[5] << 16) | (serialized[6] << 8) | serialized[7];
     ASSERT_EQ(length_field, 12u);  // 8 (header) + 4 (payload) = 12
 
     // Client ID and Session ID (big-endian)
-    uint32_t request_id_field = (serialized[8] << 24) | (serialized[9] << 16) | (serialized[10] << 8) | serialized[11];
+    uint32_t request_id_field =
+        (serialized[8] << 24) | (serialized[9] << 16) | (serialized[10] << 8) | serialized[11];
     ASSERT_EQ(request_id_field, 0xABCD0001);
 
     // Protocol version, interface version, message type, return code
@@ -216,7 +232,7 @@ TEST_F(TcpTransportTest, MessageSerialization) {
 
     // Test that we can create a new message and verify round-trip works
     Message reconstructed_message(MessageId(0x1234, 0x5678), RequestId(0xABCD, 0x0001),
-                                MessageType::REQUEST, ReturnCode::E_OK);
+                                  MessageType::REQUEST, ReturnCode::E_OK);
     std::vector<uint8_t> payload = {serialized[16], serialized[17], serialized[18], serialized[19]};
     reconstructed_message.set_payload(payload);
 
@@ -226,7 +242,8 @@ TEST_F(TcpTransportTest, MessageSerialization) {
     ASSERT_EQ(serialized, re_serialized);
 }
 
-TEST_F(TcpTransportTest, ListenerCallbacks) {
+TEST_F(TcpTransportTest, ListenerCallbacks)
+{
     TcpTransport transport(config);
     auto listener = std::make_shared<TestTcpListener>();
 
@@ -243,7 +260,8 @@ TEST_F(TcpTransportTest, ListenerCallbacks) {
     }
 }
 
-TEST_F(TcpTransportTest, ConfigurationValidation) {
+TEST_F(TcpTransportTest, ConfigurationValidation)
+{
     TcpTransportConfig test_config;
 
     // Test default configuration
@@ -262,7 +280,8 @@ TEST_F(TcpTransportTest, ConfigurationValidation) {
     ASSERT_TRUE(true);  // Construction succeeded
 }
 
-TEST_F(TcpTransportTest, ConnectionStateManagement) {
+TEST_F(TcpTransportTest, ConnectionStateManagement)
+{
     TcpTransport transport(config);
 
     // Initially not connected
@@ -283,7 +302,8 @@ TEST_F(TcpTransportTest, ConnectionStateManagement) {
     transport.stop();
 }
 
-TEST_F(TcpTransportTest, EndpointValidation) {
+TEST_F(TcpTransportTest, EndpointValidation)
+{
     TcpTransport transport(config);
 
     // Valid endpoint
@@ -297,7 +317,8 @@ TEST_F(TcpTransportTest, EndpointValidation) {
     transport.stop();
 }
 
-TEST_F(TcpTransportTest, TransportLifecycle) {
+TEST_F(TcpTransportTest, TransportLifecycle)
+{
     TcpTransport transport(config);
     Endpoint local_endpoint("127.0.0.1", 30505);
 
@@ -326,7 +347,8 @@ TEST_F(TcpTransportTest, TransportLifecycle) {
 
 // Integration-style test for message sending/receiving
 // Note: This test requires proper server setup and may be skipped in CI
-TEST_F(TcpTransportTest, DISABLED_MessageRoundTrip) {
+TEST_F(TcpTransportTest, DISABLED_MessageRoundTrip)
+{
     // This test would require setting up a TCP server and client
     // For now, it's disabled but shows the intended test structure
 
@@ -358,8 +380,8 @@ TEST_F(TcpTransportTest, DISABLED_MessageRoundTrip) {
     ASSERT_TRUE(client_transport.is_connected());
 
     // Send message from client to server
-    Message test_message(MessageId(0x1234, 0x0001), RequestId(0xABCD, 0x0001),
-                        MessageType::REQUEST, ReturnCode::E_OK);
+    Message test_message(MessageId(0x1234, 0x0001), RequestId(0xABCD, 0x0001), MessageType::REQUEST,
+                         ReturnCode::E_OK);
     test_message.set_payload({0x01, 0x02, 0x03});
 
     result = client_transport.send_message(test_message, server_endpoint);
@@ -374,7 +396,8 @@ TEST_F(TcpTransportTest, DISABLED_MessageRoundTrip) {
     server_transport.stop();
 }
 
-TEST_F(TcpTransportTest, ResourceCleanup) {
+TEST_F(TcpTransportTest, ResourceCleanup)
+{
     // Test that resources are properly cleaned up
     {
         TcpTransport transport(config);
@@ -391,7 +414,8 @@ TEST_F(TcpTransportTest, ResourceCleanup) {
     ASSERT_TRUE(true);  // Test passes if no exceptions or resource leaks
 }
 
-TEST_F(TcpTransportTest, ConfigurationBoundaryValues) {
+TEST_F(TcpTransportTest, ConfigurationBoundaryValues)
+{
     // Test configuration with boundary values
     TcpTransportConfig boundary_config;
 
@@ -406,7 +430,7 @@ TEST_F(TcpTransportTest, ConfigurationBoundaryValues) {
     ASSERT_TRUE(true);
 
     // Large values
-    boundary_config.max_receive_buffer = 1024 * 1024;  // 1MB
+    boundary_config.max_receive_buffer = 1024 * 1024;                // 1MB
     boundary_config.connection_timeout = std::chrono::seconds(300);  // 5 minutes
 
     TcpTransport transport2(boundary_config);

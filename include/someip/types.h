@@ -15,8 +15,8 @@
 #define SOMEIP_TYPES_H
 
 #include <cstdint>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace someip {
 
@@ -73,21 +73,27 @@ struct MessageId {
     uint16_t method_id{0};
 
     MessageId() = default;
-    MessageId(uint16_t service, uint16_t method) : service_id(service), method_id(method) {}
+    MessageId(uint16_t service, uint16_t method) : service_id(service), method_id(method)
+    {
+    }
 
-    uint32_t to_uint32() const {
+    uint32_t to_uint32() const
+    {
         return (static_cast<uint32_t>(service_id) << 16) | method_id;
     }
 
-    static MessageId from_uint32(uint32_t value) {
+    static MessageId from_uint32(uint32_t value)
+    {
         return MessageId(static_cast<uint16_t>(value >> 16), static_cast<uint16_t>(value & 0xFFFF));
     }
 
-    bool operator==(const MessageId& other) const {
+    bool operator==(const MessageId& other) const
+    {
         return service_id == other.service_id && method_id == other.method_id;
     }
 
-    bool operator!=(const MessageId& other) const {
+    bool operator!=(const MessageId& other) const
+    {
         return !(*this == other);
     }
 };
@@ -100,21 +106,27 @@ struct RequestId {
     uint16_t session_id{0};
 
     RequestId() = default;
-    RequestId(uint16_t client, uint16_t session) : client_id(client), session_id(session) {}
+    RequestId(uint16_t client, uint16_t session) : client_id(client), session_id(session)
+    {
+    }
 
-    uint32_t to_uint32() const {
+    uint32_t to_uint32() const
+    {
         return (static_cast<uint32_t>(client_id) << 16) | session_id;
     }
 
-    static RequestId from_uint32(uint32_t value) {
+    static RequestId from_uint32(uint32_t value)
+    {
         return RequestId(static_cast<uint16_t>(value >> 16), static_cast<uint16_t>(value & 0xFFFF));
     }
 
-    bool operator==(const RequestId& other) const {
+    bool operator==(const RequestId& other) const
+    {
         return client_id == other.client_id && session_id == other.session_id;
     }
 
-    bool operator!=(const RequestId& other) const {
+    bool operator!=(const RequestId& other) const
+    {
         return !(*this == other);
     }
 };
@@ -193,6 +205,6 @@ MessageType get_ack_type(MessageType type);
  */
 bool is_success(ReturnCode code);
 
-} // namespace someip
+}  // namespace someip
 
-#endif // SOMEIP_TYPES_H
+#endif  // SOMEIP_TYPES_H

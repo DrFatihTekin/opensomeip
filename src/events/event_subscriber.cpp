@@ -12,35 +12,39 @@
  ********************************************************************************/
 
 #include "events/event_subscriber.h"
+
+#include <algorithm>
+#include <atomic>
+#include <mutex>
+#include <unordered_map>
+
 #include "events/event_types.h"
-#include "transport/udp_transport.h"
+#include "someip/message.h"
 #include "transport/endpoint.h"
 #include "transport/transport.h"
-#include "someip/message.h"
-#include <unordered_map>
-#include <mutex>
-#include <atomic>
-#include <algorithm>
+#include "transport/udp_transport.h"
 
 namespace someip {
 namespace events {
 
 class EventSubscriberImpl : public transport::ITransportListener {
-public:
+   public:
     EventSubscriberImpl(uint16_t client_id)
         : client_id_(client_id),
-          transport_(std::make_shared<transport::UdpTransport>(
-              transport::Endpoint("127.0.0.1", 0))),
-          running_(false) {
-
+          transport_(
+              std::make_shared<transport::UdpTransport>(transport::Endpoint("127.0.0.1", 0))),
+          running_(false)
+    {
         transport_->set_listener(this);
     }
 
-    ~EventSubscriberImpl() {
+    ~EventSubscriberImpl()
+    {
         shutdown();
     }
 
-    bool initialize() {
+    bool initialize()
+    {
         if (running_) {
             return true;
         }
@@ -53,7 +57,8 @@ public:
         return true;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         if (!running_) {
             return;
         }
@@ -68,10 +73,10 @@ public:
     }
 
     bool subscribe_eventgroup(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id,
-                            EventNotificationCallback notification_callback,
-                            SubscriptionStatusCallback status_callback,
-                            const std::vector<EventFilter>& filters) {
-
+                              EventNotificationCallback notification_callback,
+                              SubscriptionStatusCallback status_callback,
+                              const std::vector<EventFilter>& filters)
+    {
         if (!running_) {
             return false;
         }
@@ -98,8 +103,8 @@ public:
 
         // Create subscription message (simplified)
         MessageId msg_id(service_id, 0x0001);  // Method ID for subscription
-        Message subscription_msg(msg_id, RequestId(client_id_, 0x0001),
-                                MessageType::REQUEST, ReturnCode::E_OK);
+        Message subscription_msg(msg_id, RequestId(client_id_, 0x0001), MessageType::REQUEST,
+                                 ReturnCode::E_OK);
 
         // Add subscription data to payload
         std::vector<uint8_t> payload;
@@ -115,7 +120,8 @@ public:
         return success;
     }
 
-    bool unsubscribe_eventgroup(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id) {
+    bool unsubscribe_eventgroup(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id)
+    {
         if (!running_) {
             return false;
         }
@@ -132,8 +138,8 @@ public:
         transport::Endpoint service_endpoint("127.0.0.1", 30500);  // TODO: Get from SD
 
         MessageId msg_id(service_id, 0x0002);  // Method ID for unsubscription
-        Message unsubscription_msg(msg_id, RequestId(client_id_, 0x0002),
-                                  MessageType::REQUEST, ReturnCode::E_OK);
+        Message unsubscription_msg(msg_id, RequestId(client_id_, 0x0002), MessageType::REQUEST,
+                                   ReturnCode::E_OK);
 
         // Add unsubscription data to payload
         std::vector<uint8_t> payload;
@@ -152,8 +158,8 @@ public:
     }
 
     bool request_field(uint16_t service_id, uint16_t instance_id, uint16_t event_id,
-                      EventNotificationCallback callback) {
-
+                       EventNotificationCallback callback)
+    {
         if (!running_) {
             return false;
         }
@@ -167,8 +173,8 @@ public:
         transport::Endpoint service_endpoint("127.0.0.1", 30500);  // TODO: Get from SD
 
         MessageId msg_id(service_id, 0x0003);  // Method ID for field request
-        Message field_msg(msg_id, RequestId(client_id_, 0x0003),
-                         MessageType::REQUEST, ReturnCode::E_OK);
+        Message field_msg(msg_id, RequestId(client_id_, 0x0003), MessageType::REQUEST,
+                          ReturnCode::E_OK);
 
         // Add field ID to payload
         std::vector<uint8_t> payload;
@@ -180,8 +186,8 @@ public:
     }
 
     bool set_event_filters(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id,
-                         const std::vector<EventFilter>& filters) {
-
+                           const std::vector<EventFilter>& filters)
+    {
         std::scoped_lock subs_lock(subscriptions_mutex_);
         std::string key = make_subscription_key(service_id, instance_id, eventgroup_id);
 
@@ -194,7 +200,8 @@ public:
         return true;
     }
 
-    std::vector<EventSubscription> get_active_subscriptions() const {
+    std::vector<EventSubscription> get_active_subscriptions() const
+    {
         std::scoped_lock subs_lock(subscriptions_mutex_);
         std::vector<EventSubscription> result;
 
@@ -206,8 +213,8 @@ public:
     }
 
     SubscriptionState get_subscription_status(uint16_t service_id, uint16_t instance_id,
-                                            uint16_t eventgroup_id) const {
-
+                                              uint16_t eventgroup_id) const
+    {
         std::scoped_lock subs_lock(subscriptions_mutex_);
         std::string key = make_subscription_key(service_id, instance_id, eventgroup_id);
 
@@ -219,16 +226,18 @@ public:
         return it->second.subscription.state;
     }
 
-    bool is_ready() const {
+    bool is_ready() const
+    {
         return running_ && transport_->is_connected();
     }
 
-    EventSubscriber::Statistics get_statistics() const {
+    EventSubscriber::Statistics get_statistics() const
+    {
         // TODO: Implement statistics tracking
         return EventSubscriber::Statistics{};
     }
 
-private:
+   private:
     struct SubscriptionInfo {
         EventSubscription subscription;
         EventNotificationCallback notification_callback;
@@ -236,15 +245,21 @@ private:
         std::vector<EventFilter> filters;
     };
 
-    std::string make_subscription_key(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id) const {
-        return std::to_string(service_id) + ":" + std::to_string(instance_id) + ":" + std::to_string(eventgroup_id);
+    std::string make_subscription_key(uint16_t service_id, uint16_t instance_id,
+                                      uint16_t eventgroup_id) const
+    {
+        return std::to_string(service_id) + ":" + std::to_string(instance_id) + ":" +
+               std::to_string(eventgroup_id);
     }
 
-    std::string make_field_key(uint16_t service_id, uint16_t instance_id, uint16_t event_id) {
-        return std::to_string(service_id) + ":" + std::to_string(instance_id) + ":" + std::to_string(event_id);
+    std::string make_field_key(uint16_t service_id, uint16_t instance_id, uint16_t event_id)
+    {
+        return std::to_string(service_id) + ":" + std::to_string(instance_id) + ":" +
+               std::to_string(event_id);
     }
 
-    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override {
+    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override
+    {
         // Check if this is an event notification
         if (message->get_message_type() != MessageType::NOTIFICATION) {
             return;
@@ -254,14 +269,16 @@ private:
         std::scoped_lock subs_lock(subscriptions_mutex_);
 
         uint16_t service_id = message->get_service_id();
-        uint16_t event_id = message->get_method_id();  // Event ID is in method ID field for notifications
+        uint16_t event_id =
+            message->get_method_id();  // Event ID is in method ID field for notifications
 
         // Find matching subscription (we need to check all subscriptions for this service)
         for (auto& sub_pair : subscriptions_) {
             auto& sub_info = sub_pair.second;
             if (sub_info.subscription.service_id == service_id) {
                 // Create event notification
-                EventNotification notification(service_id, sub_info.subscription.instance_id, event_id);
+                EventNotification notification(service_id, sub_info.subscription.instance_id,
+                                               event_id);
                 notification.client_id = message->get_client_id();
                 notification.session_id = message->get_session_id();
                 notification.event_data = message->get_payload();
@@ -296,7 +313,8 @@ private:
         }
     }
 
-    void on_connection_lost(const transport::Endpoint& endpoint) override {
+    void on_connection_lost(const transport::Endpoint& endpoint) override
+    {
         // Handle service disconnection
         std::scoped_lock subs_lock(subscriptions_mutex_);
 
@@ -309,11 +327,13 @@ private:
         }
     }
 
-    void on_connection_established(const transport::Endpoint& endpoint) override {
+    void on_connection_established(const transport::Endpoint& endpoint) override
+    {
         // Handle service reconnection
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         // Handle transport errors
     }
 
@@ -331,57 +351,72 @@ private:
 
 // EventSubscriber implementation
 EventSubscriber::EventSubscriber(uint16_t client_id)
-    : impl_(std::make_unique<EventSubscriberImpl>(client_id)) {
+    : impl_(std::make_unique<EventSubscriberImpl>(client_id))
+{
 }
 
 EventSubscriber::~EventSubscriber() = default;
 
-bool EventSubscriber::initialize() {
+bool EventSubscriber::initialize()
+{
     return impl_->initialize();
 }
 
-void EventSubscriber::shutdown() {
+void EventSubscriber::shutdown()
+{
     impl_->shutdown();
 }
 
-bool EventSubscriber::subscribe_eventgroup(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id,
-                                         EventNotificationCallback notification_callback,
-                                         SubscriptionStatusCallback status_callback,
-                                         const std::vector<EventFilter>& filters) {
+bool EventSubscriber::subscribe_eventgroup(uint16_t service_id, uint16_t instance_id,
+                                           uint16_t eventgroup_id,
+                                           EventNotificationCallback notification_callback,
+                                           SubscriptionStatusCallback status_callback,
+                                           const std::vector<EventFilter>& filters)
+{
     return impl_->subscribe_eventgroup(service_id, instance_id, eventgroup_id,
-                                     notification_callback, status_callback, filters);
+                                       notification_callback, status_callback, filters);
 }
 
-bool EventSubscriber::unsubscribe_eventgroup(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id) {
+bool EventSubscriber::unsubscribe_eventgroup(uint16_t service_id, uint16_t instance_id,
+                                             uint16_t eventgroup_id)
+{
     return impl_->unsubscribe_eventgroup(service_id, instance_id, eventgroup_id);
 }
 
 bool EventSubscriber::request_field(uint16_t service_id, uint16_t instance_id, uint16_t event_id,
-                                   EventNotificationCallback callback) {
+                                    EventNotificationCallback callback)
+{
     return impl_->request_field(service_id, instance_id, event_id, callback);
 }
 
-bool EventSubscriber::set_event_filters(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id,
-                                      const std::vector<EventFilter>& filters) {
+bool EventSubscriber::set_event_filters(uint16_t service_id, uint16_t instance_id,
+                                        uint16_t eventgroup_id,
+                                        const std::vector<EventFilter>& filters)
+{
     return impl_->set_event_filters(service_id, instance_id, eventgroup_id, filters);
 }
 
-std::vector<EventSubscription> EventSubscriber::get_active_subscriptions() const {
+std::vector<EventSubscription> EventSubscriber::get_active_subscriptions() const
+{
     return impl_->get_active_subscriptions();
 }
 
-SubscriptionState EventSubscriber::get_subscription_status(uint16_t service_id, uint16_t instance_id,
-                                                         uint16_t eventgroup_id) const {
+SubscriptionState EventSubscriber::get_subscription_status(uint16_t service_id,
+                                                           uint16_t instance_id,
+                                                           uint16_t eventgroup_id) const
+{
     return impl_->get_subscription_status(service_id, instance_id, eventgroup_id);
 }
 
-bool EventSubscriber::is_ready() const {
+bool EventSubscriber::is_ready() const
+{
     return impl_->is_ready();
 }
 
-EventSubscriber::Statistics EventSubscriber::get_statistics() const {
+EventSubscriber::Statistics EventSubscriber::get_statistics() const
+{
     return impl_->get_statistics();
 }
 
-} // namespace events
-} // namespace someip
+}  // namespace events
+}  // namespace someip

@@ -11,26 +11,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
+#include <atomic>
+#include <chrono>
 #include <gtest/gtest.h>
-#include <rpc/rpc_types.h>
 #include <rpc/rpc_client.h>
 #include <rpc/rpc_server.h>
+#include <rpc/rpc_types.h>
 #include <thread>
-#include <chrono>
-#include <atomic>
 
 using namespace someip::rpc;
 
 class RpcTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         // Test service and method IDs
         test_service_id_ = 0x1234;
         test_method_id_ = 0x0001;
         client_id_ = 0xABCD;
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // Cleanup if needed
     }
 
@@ -40,7 +42,8 @@ protected:
 };
 
 // Test RPC types
-TEST_F(RpcTest, RpcResultValues) {
+TEST_F(RpcTest, RpcResultValues)
+{
     EXPECT_EQ(static_cast<int>(RpcResult::SUCCESS), 0);
     EXPECT_EQ(static_cast<int>(RpcResult::TIMEOUT), 1);
     EXPECT_EQ(static_cast<int>(RpcResult::NETWORK_ERROR), 2);
@@ -50,7 +53,8 @@ TEST_F(RpcTest, RpcResultValues) {
     EXPECT_EQ(static_cast<int>(RpcResult::INTERNAL_ERROR), 6);
 }
 
-TEST_F(RpcTest, RpcRequestConstruction) {
+TEST_F(RpcTest, RpcRequestConstruction)
+{
     RpcRequest request(test_service_id_, test_method_id_, client_id_, 0x1234);
 
     EXPECT_EQ(request.service_id, test_service_id_);
@@ -60,7 +64,8 @@ TEST_F(RpcTest, RpcRequestConstruction) {
     EXPECT_TRUE(request.parameters.empty());
 }
 
-TEST_F(RpcTest, RpcResponseConstruction) {
+TEST_F(RpcTest, RpcResponseConstruction)
+{
     RpcResponse response(test_service_id_, test_method_id_, client_id_, 0x1234, RpcResult::SUCCESS);
 
     EXPECT_EQ(response.service_id, test_service_id_);
@@ -72,13 +77,13 @@ TEST_F(RpcTest, RpcResponseConstruction) {
 }
 
 // Test server method registration
-TEST_F(RpcTest, ServerMethodRegistration) {
+TEST_F(RpcTest, ServerMethodRegistration)
+{
     RpcServer server(test_service_id_);
 
     // Should be able to register a method
-    auto handler = [](uint16_t client_id, uint16_t session_id,
-                     const std::vector<uint8_t>& input,
-                     std::vector<uint8_t>& output) -> RpcResult {
+    auto handler = [](uint16_t client_id, uint16_t session_id, const std::vector<uint8_t>& input,
+                      std::vector<uint8_t>& output) -> RpcResult {
         output = {0x01, 0x02, 0x03};
         return RpcResult::SUCCESS;
     };
@@ -102,7 +107,8 @@ TEST_F(RpcTest, ServerMethodRegistration) {
 }
 
 // Test client basic functionality
-TEST_F(RpcTest, ClientBasicFunctionality) {
+TEST_F(RpcTest, ClientBasicFunctionality)
+{
     RpcClient client(client_id_);
 
     EXPECT_FALSE(client.is_ready());
@@ -117,7 +123,8 @@ TEST_F(RpcTest, ClientBasicFunctionality) {
 }
 
 // Test timeout configuration
-TEST_F(RpcTest, RpcTimeoutConfiguration) {
+TEST_F(RpcTest, RpcTimeoutConfiguration)
+{
     RpcTimeout timeout;
 
     // Default values
@@ -134,7 +141,8 @@ TEST_F(RpcTest, RpcTimeoutConfiguration) {
 }
 
 // Test statistics structure
-TEST_F(RpcTest, ClientStatistics) {
+TEST_F(RpcTest, ClientStatistics)
+{
     RpcClient client(client_id_);
 
     auto stats = client.get_statistics();
@@ -147,7 +155,8 @@ TEST_F(RpcTest, ClientStatistics) {
     EXPECT_EQ(stats.average_response_time, std::chrono::milliseconds(0));
 }
 
-TEST_F(RpcTest, ServerStatistics) {
+TEST_F(RpcTest, ServerStatistics)
+{
     RpcServer server(test_service_id_);
 
     auto stats = server.get_statistics();

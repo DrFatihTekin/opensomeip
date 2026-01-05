@@ -14,8 +14,8 @@
 #ifndef SOMEIP_TRANSPORT_ENDPOINT_H
 #define SOMEIP_TRANSPORT_ENDPOINT_H
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 namespace someip {
 namespace transport {
@@ -23,11 +23,7 @@ namespace transport {
 /**
  * @brief Transport protocol types
  */
-enum class TransportProtocol : uint8_t {
-    UDP,
-    TCP,
-    MULTICAST_UDP
-};
+enum class TransportProtocol : uint8_t { UDP, TCP, MULTICAST_UDP };
 
 /**
  * @brief Network endpoint representation
@@ -35,7 +31,7 @@ enum class TransportProtocol : uint8_t {
  * This class represents a network endpoint (IP address + port) for SOME/IP communication.
  */
 class Endpoint {
-public:
+   public:
     /**
      * @brief Default constructor
      */
@@ -76,14 +72,32 @@ public:
     ~Endpoint() = default;
 
     // Accessors
-    const std::string& get_address() const { return address_; }
-    void set_address(const std::string& address) { address_ = address; }
+    const std::string& get_address() const
+    {
+        return address_;
+    }
+    void set_address(const std::string& address)
+    {
+        address_ = address;
+    }
 
-    uint16_t get_port() const { return port_; }
-    void set_port(uint16_t port) { port_ = port; }
+    uint16_t get_port() const
+    {
+        return port_;
+    }
+    void set_port(uint16_t port)
+    {
+        port_ = port;
+    }
 
-    TransportProtocol get_protocol() const { return protocol_; }
-    void set_protocol(TransportProtocol protocol) { protocol_ = protocol; }
+    TransportProtocol get_protocol() const
+    {
+        return protocol_;
+    }
+    void set_protocol(TransportProtocol protocol)
+    {
+        protocol_ = protocol;
+    }
 
     // Utility methods
     bool is_valid() const;
@@ -102,7 +116,7 @@ public:
         size_t operator()(const Endpoint& endpoint) const;
     };
 
-private:
+   private:
     std::string address_;
     uint16_t port_;
     TransportProtocol protocol_;
@@ -118,7 +132,7 @@ extern const Endpoint SOMEIP_SD_MULTICAST_ENDPOINT;
 extern const Endpoint SOMEIP_DEFAULT_UDP_ENDPOINT;
 extern const Endpoint SOMEIP_DEFAULT_TCP_ENDPOINT;
 
-} // namespace transport
-} // namespace someip
+}  // namespace transport
+}  // namespace someip
 
-#endif // SOMEIP_TRANSPORT_ENDPOINT_H
+#endif  // SOMEIP_TRANSPORT_ENDPOINT_H

@@ -12,38 +12,44 @@
  ********************************************************************************/
 
 #include "events/event_publisher.h"
-#include "events/event_types.h"
-#include "transport/udp_transport.h"
-#include "transport/endpoint.h"
-#include "transport/transport.h"
-#include "someip/message.h"
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
-#include <mutex>
-#include <atomic>
-#include <thread>
-#include <chrono>
-#include <algorithm>
+
+#include "events/event_types.h"
+#include "someip/message.h"
+#include "transport/endpoint.h"
+#include "transport/transport.h"
+#include "transport/udp_transport.h"
 
 namespace someip {
 namespace events {
 
 class EventPublisherImpl : public transport::ITransportListener {
-public:
+   public:
     EventPublisherImpl(uint16_t service_id, uint16_t instance_id)
-        : service_id_(service_id), instance_id_(instance_id),
-          transport_(std::make_shared<transport::UdpTransport>(
-              transport::Endpoint("127.0.0.1", 0))),
-          running_(false), next_session_id_(1) {
-
+        : service_id_(service_id),
+          instance_id_(instance_id),
+          transport_(
+              std::make_shared<transport::UdpTransport>(transport::Endpoint("127.0.0.1", 0))),
+          running_(false),
+          next_session_id_(1)
+    {
         transport_->set_listener(this);
     }
 
-    ~EventPublisherImpl() {
+    ~EventPublisherImpl()
+    {
         shutdown();
     }
 
-    bool initialize() {
+    bool initialize()
+    {
         if (running_) {
             return true;
         }
@@ -58,7 +64,8 @@ public:
         return true;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         if (!running_) {
             return;
         }
@@ -76,7 +83,8 @@ public:
         transport_->stop();
     }
 
-    bool register_event(const EventConfig& config) {
+    bool register_event(const EventConfig& config)
+    {
         std::scoped_lock events_lock(events_mutex_);
 
         // Check if already registered
@@ -87,12 +95,14 @@ public:
         return !already_exists;
     }
 
-    bool unregister_event(uint16_t event_id) {
+    bool unregister_event(uint16_t event_id)
+    {
         std::scoped_lock events_lock(events_mutex_);
         return registered_events_.erase(event_id) > 0;
     }
 
-    bool update_event_config(uint16_t event_id, const EventConfig& config) {
+    bool update_event_config(uint16_t event_id, const EventConfig& config)
+    {
         std::scoped_lock events_lock(events_mutex_);
 
         auto it = registered_events_.find(event_id);
@@ -104,7 +114,8 @@ public:
         return true;
     }
 
-    bool publish_event(uint16_t event_id, const std::vector<uint8_t>& data) {
+    bool publish_event(uint16_t event_id, const std::vector<uint8_t>& data)
+    {
         if (!running_) {
             return false;
         }
@@ -134,14 +145,15 @@ public:
         return true;
     }
 
-    bool publish_field(uint16_t event_id, const std::vector<uint8_t>& data) {
+    bool publish_field(uint16_t event_id, const std::vector<uint8_t>& data)
+    {
         // Fields are published immediately like events
         return publish_event(event_id, data);
     }
 
     bool handle_subscription(uint16_t eventgroup_id, uint16_t client_id,
-                           const std::vector<EventFilter>& filters) {
-
+                             const std::vector<EventFilter>& filters)
+    {
         std::scoped_lock subs_lock(subscriptions_mutex_);
 
         // Create client info (simplified - using localhost for demo)
@@ -151,21 +163,22 @@ public:
         client_info.filters = filters;
 
         auto& clients = subscriptions_[eventgroup_id];
-        auto it = std::find_if(clients.begin(), clients.end(),
-            [client_id](const ClientInfo& info) {
-                return info.client_id == client_id;
-            });
+        auto it = std::find_if(clients.begin(), clients.end(), [client_id](const ClientInfo& info) {
+            return info.client_id == client_id;
+        });
 
         if (it == clients.end()) {
             clients.push_back(client_info);
-        } else {
+        }
+        else {
             *it = client_info;  // Update existing
         }
 
         return true;
     }
 
-    bool handle_unsubscription(uint16_t eventgroup_id, uint16_t client_id) {
+    bool handle_unsubscription(uint16_t eventgroup_id, uint16_t client_id)
+    {
         std::scoped_lock subs_lock(subscriptions_mutex_);
 
         auto sub_it = subscriptions_.find(eventgroup_id);
@@ -174,16 +187,16 @@ public:
         }
 
         auto& clients = sub_it->second;
-        auto it = std::remove_if(clients.begin(), clients.end(),
-            [client_id](const ClientInfo& info) {
-                return info.client_id == client_id;
-            });
+        auto it = std::remove_if(
+            clients.begin(), clients.end(),
+            [client_id](const ClientInfo& info) { return info.client_id == client_id; });
 
         clients.erase(it, clients.end());
         return true;
     }
 
-    std::vector<uint16_t> get_registered_events() const {
+    std::vector<uint16_t> get_registered_events() const
+    {
         std::scoped_lock events_lock(events_mutex_);
         std::vector<uint16_t> events;
 
@@ -194,7 +207,8 @@ public:
         return events;
     }
 
-    std::vector<uint16_t> get_subscriptions(uint16_t eventgroup_id) const {
+    std::vector<uint16_t> get_subscriptions(uint16_t eventgroup_id) const
+    {
         std::scoped_lock subs_lock(subscriptions_mutex_);
 
         auto it = subscriptions_.find(eventgroup_id);
@@ -210,23 +224,26 @@ public:
         return client_ids;
     }
 
-    bool is_ready() const {
+    bool is_ready() const
+    {
         return running_ && transport_->is_connected();
     }
 
-    EventPublisher::Statistics get_statistics() const {
+    EventPublisher::Statistics get_statistics() const
+    {
         // TODO: Implement statistics tracking
         return EventPublisher::Statistics{};
     }
 
-private:
+   private:
     struct ClientInfo {
         uint16_t client_id;
         transport::Endpoint endpoint;
         std::vector<EventFilter> filters;
     };
 
-    void start_publish_timer() {
+    void start_publish_timer()
+    {
         if (publish_timer_thread_.joinable()) {
             return;
         }
@@ -244,13 +261,15 @@ private:
         });
     }
 
-    void stop_publish_timer() {
+    void stop_publish_timer()
+    {
         if (publish_timer_thread_.joinable()) {
             publish_timer_thread_.join();
         }
     }
 
-    void publish_cyclic_events() {
+    void publish_cyclic_events()
+    {
         std::scoped_lock events_lock(events_mutex_);
         auto now = std::chrono::steady_clock::now();
 
@@ -259,7 +278,6 @@ private:
 
             if (config.notification_type == NotificationType::PERIODIC &&
                 config.cycle_time.count() > 0) {
-
                 // Check if it's time to publish
                 auto time_since_last = std::chrono::duration_cast<std::chrono::milliseconds>(
                     now - last_publish_times_[config.event_id]);
@@ -274,12 +292,12 @@ private:
     }
 
     void send_event_notification(const EventNotification& notification,
-                               const transport::Endpoint& client_endpoint) {
-
+                                 const transport::Endpoint& client_endpoint)
+    {
         // Create SOME/IP message for event notification
         MessageId msg_id(service_id_, notification.event_id);
         Message someip_message(msg_id, RequestId(notification.client_id, notification.session_id),
-                              MessageType::NOTIFICATION, ReturnCode::E_OK);
+                               MessageType::NOTIFICATION, ReturnCode::E_OK);
         someip_message.set_payload(notification.event_data);
 
         Result result = transport_->send_message(someip_message, client_endpoint);
@@ -288,30 +306,33 @@ private:
         }
     }
 
-    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override {
+    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override
+    {
         // Handle subscription/unsubscription messages
         // This would typically come from SD or direct subscription messages
     }
 
-    void on_connection_lost(const transport::Endpoint& endpoint) override {
+    void on_connection_lost(const transport::Endpoint& endpoint) override
+    {
         // Handle client disconnection
         std::scoped_lock subs_lock(subscriptions_mutex_);
 
         for (auto& sub_pair : subscriptions_) {
             auto& clients = sub_pair.second;
-            auto it = std::remove_if(clients.begin(), clients.end(),
-                [&endpoint](const ClientInfo& info) {
-                    return info.endpoint == endpoint;
-                });
+            auto it = std::remove_if(
+                clients.begin(), clients.end(),
+                [&endpoint](const ClientInfo& info) { return info.endpoint == endpoint; });
             clients.erase(it, clients.end());
         }
     }
 
-    void on_connection_established(const transport::Endpoint& endpoint) override {
+    void on_connection_established(const transport::Endpoint& endpoint) override
+    {
         // Handle new client connections
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         // Handle transport errors
     }
 
@@ -333,63 +354,77 @@ private:
 
 // EventPublisher implementation
 EventPublisher::EventPublisher(uint16_t service_id, uint16_t instance_id)
-    : impl_(std::make_unique<EventPublisherImpl>(service_id, instance_id)) {
+    : impl_(std::make_unique<EventPublisherImpl>(service_id, instance_id))
+{
 }
 
 EventPublisher::~EventPublisher() = default;
 
-bool EventPublisher::initialize() {
+bool EventPublisher::initialize()
+{
     return impl_->initialize();
 }
 
-void EventPublisher::shutdown() {
+void EventPublisher::shutdown()
+{
     impl_->shutdown();
 }
 
-bool EventPublisher::register_event(const EventConfig& config) {
+bool EventPublisher::register_event(const EventConfig& config)
+{
     return impl_->register_event(config);
 }
 
-bool EventPublisher::unregister_event(uint16_t event_id) {
+bool EventPublisher::unregister_event(uint16_t event_id)
+{
     return impl_->unregister_event(event_id);
 }
 
-bool EventPublisher::update_event_config(uint16_t event_id, const EventConfig& config) {
+bool EventPublisher::update_event_config(uint16_t event_id, const EventConfig& config)
+{
     return impl_->update_event_config(event_id, config);
 }
 
-bool EventPublisher::publish_event(uint16_t event_id, const std::vector<uint8_t>& data) {
+bool EventPublisher::publish_event(uint16_t event_id, const std::vector<uint8_t>& data)
+{
     return impl_->publish_event(event_id, data);
 }
 
-bool EventPublisher::publish_field(uint16_t event_id, const std::vector<uint8_t>& data) {
+bool EventPublisher::publish_field(uint16_t event_id, const std::vector<uint8_t>& data)
+{
     return impl_->publish_field(event_id, data);
 }
 
 bool EventPublisher::handle_subscription(uint16_t eventgroup_id, uint16_t client_id,
-                                       const std::vector<EventFilter>& filters) {
+                                         const std::vector<EventFilter>& filters)
+{
     return impl_->handle_subscription(eventgroup_id, client_id, filters);
 }
 
-bool EventPublisher::handle_unsubscription(uint16_t eventgroup_id, uint16_t client_id) {
+bool EventPublisher::handle_unsubscription(uint16_t eventgroup_id, uint16_t client_id)
+{
     return impl_->handle_unsubscription(eventgroup_id, client_id);
 }
 
-std::vector<uint16_t> EventPublisher::get_registered_events() const {
+std::vector<uint16_t> EventPublisher::get_registered_events() const
+{
     return impl_->get_registered_events();
 }
 
-std::vector<uint16_t> EventPublisher::get_subscriptions(uint16_t eventgroup_id) const {
+std::vector<uint16_t> EventPublisher::get_subscriptions(uint16_t eventgroup_id) const
+{
     return impl_->get_subscriptions(eventgroup_id);
 }
 
-bool EventPublisher::is_ready() const {
+bool EventPublisher::is_ready() const
+{
     return impl_->is_ready();
 }
 
-EventPublisher::Statistics EventPublisher::get_statistics() const {
+EventPublisher::Statistics EventPublisher::get_statistics() const
+{
     return impl_->get_statistics();
 }
 
-} // namespace events
-} // namespace someip
+}  // namespace events
+}  // namespace someip

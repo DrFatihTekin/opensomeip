@@ -11,44 +11,49 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
+#include <arpa/inet.h>
+#include <atomic>
+#include <chrono>
 #include <gtest/gtest.h>
-#include <sd/sd_types.h>
+#include <sd/sd_client.h>
 #include <sd/sd_message.h>
 #include <sd/sd_server.h>
-#include <sd/sd_client.h>
-#include <arpa/inet.h>
+#include <sd/sd_types.h>
 #include <thread>
-#include <chrono>
-#include <atomic>
 
 using namespace someip::sd;
 
 class SdTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         // Setup code
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // Cleanup code
     }
 };
 
 // Test SD types
-TEST_F(SdTest, EntryTypes) {
+TEST_F(SdTest, EntryTypes)
+{
     EXPECT_EQ(static_cast<uint8_t>(EntryType::FIND_SERVICE), 0x00);
     EXPECT_EQ(static_cast<uint8_t>(EntryType::OFFER_SERVICE), 0x01);
     EXPECT_EQ(static_cast<uint8_t>(EntryType::SUBSCRIBE_EVENTGROUP), 0x06);
     EXPECT_EQ(static_cast<uint8_t>(EntryType::SUBSCRIBE_EVENTGROUP_ACK), 0x07);
 }
 
-TEST_F(SdTest, OptionTypes) {
+TEST_F(SdTest, OptionTypes)
+{
     EXPECT_EQ(static_cast<uint8_t>(OptionType::IPV4_ENDPOINT), 0x04);
     EXPECT_EQ(static_cast<uint8_t>(OptionType::IPV4_MULTICAST), 0x14);
     EXPECT_EQ(static_cast<uint8_t>(OptionType::IPV4_SD_ENDPOINT), 0x24);
 }
 
-TEST_F(SdTest, Instance) {
+TEST_F(SdTest, Instance)
+{
     ServiceInstance instance(0x1234, 0x5678, 1, 0);
 
     EXPECT_EQ(instance.service_id, 0x1234u);
@@ -61,7 +66,8 @@ TEST_F(SdTest, Instance) {
     EXPECT_EQ(instance.ttl_seconds, 0u);
 }
 
-TEST_F(SdTest, IPv4EndpointOptionSerialization) {
+TEST_F(SdTest, IPv4EndpointOptionSerialization)
+{
     IPv4EndpointOption option;
     option.set_ipv4_address_from_string("192.168.1.100");
     option.set_port(30509);
@@ -101,7 +107,8 @@ TEST_F(SdTest, IPv4EndpointOptionSerialization) {
     EXPECT_EQ(data[11], expected_port & 0xFF);
 }
 
-TEST_F(SdTest, IPv4EndpointOptionDeserialization) {
+TEST_F(SdTest, IPv4EndpointOptionDeserialization)
+{
     IPv4EndpointOption option;
     option.set_ipv4_address_from_string("192.168.1.100");
     option.set_port(30509);
@@ -153,7 +160,8 @@ TEST_F(SdTest, IPv4EndpointOptionDeserialization) {
 //     EXPECT_EQ(deserialized.get_options().size(), 1);
 
 //     auto* deserialized_entry = dynamic_cast<ServiceEntry*>(deserialized.get_entries()[0].get());
-//     auto* deserialized_option = dynamic_cast<IPv4EndpointOption*>(deserialized.get_options()[0].get());
+//     auto* deserialized_option =
+//     dynamic_cast<IPv4EndpointOption*>(deserialized.get_options()[0].get());
 
 //     ASSERT_TRUE(deserialized_entry != nullptr);
 //     ASSERT_TRUE(deserialized_option != nullptr);
@@ -165,7 +173,8 @@ TEST_F(SdTest, IPv4EndpointOptionDeserialization) {
 //     EXPECT_EQ(deserialized_option->get_protocol(), 0x11);
 // }
 
-TEST_F(SdTest, Config) {
+TEST_F(SdTest, Config)
+{
     SdConfig config;
 
     EXPECT_EQ(config.multicast_address, "239.255.255.251");
@@ -178,7 +187,8 @@ TEST_F(SdTest, Config) {
 }
 
 // Test SD message structures
-TEST_F(SdTest, ServiceEntry) {
+TEST_F(SdTest, ServiceEntry)
+{
     ServiceEntry entry(EntryType::OFFER_SERVICE);
 
     entry.set_service_id(0x1234);
@@ -193,7 +203,8 @@ TEST_F(SdTest, ServiceEntry) {
     EXPECT_EQ(entry.get_ttl(), 3600u);
 }
 
-TEST_F(SdTest, EventGroupEntry) {
+TEST_F(SdTest, EventGroupEntry)
+{
     EventGroupEntry entry(EntryType::SUBSCRIBE_EVENTGROUP);
 
     entry.set_service_id(0x1234);
@@ -210,10 +221,11 @@ TEST_F(SdTest, EventGroupEntry) {
     EXPECT_EQ(entry.get_ttl(), 1800u);
 }
 
-TEST_F(SdTest, EndpointOption) {
+TEST_F(SdTest, EndpointOption)
+{
     IPv4EndpointOption option;
 
-    option.set_protocol(0x06);  // TCP
+    option.set_protocol(0x06);            // TCP
     option.set_ipv4_address(0xC0A80101);  // 192.168.1.1
     option.set_port(30500);
 
@@ -223,7 +235,8 @@ TEST_F(SdTest, EndpointOption) {
     EXPECT_EQ(option.get_port(), 30500);
 }
 
-TEST_F(SdTest, MulticastOption) {
+TEST_F(SdTest, MulticastOption)
+{
     IPv4MulticastOption option;
 
     option.set_ipv4_address(0xEFFFFFFB);  // 239.255.255.251
@@ -234,7 +247,8 @@ TEST_F(SdTest, MulticastOption) {
     EXPECT_EQ(option.get_port(), 30490);
 }
 
-TEST_F(SdTest, SdMessage) {
+TEST_F(SdTest, SdMessage)
+{
     SdMessage message;
 
     EXPECT_EQ(message.get_flags(), 0);
@@ -251,7 +265,8 @@ TEST_F(SdTest, SdMessage) {
     EXPECT_EQ(message.get_flags(), 0xC0);  // 11000000
 }
 
-TEST_F(SdTest, SdMessageEntries) {
+TEST_F(SdTest, SdMessageEntries)
+{
     SdMessage message;
 
     // Add service entry
@@ -271,7 +286,8 @@ TEST_F(SdTest, SdMessageEntries) {
     EXPECT_EQ(message.get_entries().size(), 2u);
 }
 
-TEST_F(SdTest, SdMessageOptions) {
+TEST_F(SdTest, SdMessageOptions)
+{
     SdMessage message;
 
     // Add IPv4 endpoint option
@@ -292,7 +308,8 @@ TEST_F(SdTest, SdMessageOptions) {
     EXPECT_EQ(message.get_options().size(), 2u);
 }
 
-TEST_F(SdTest, Subscription) {
+TEST_F(SdTest, Subscription)
+{
     EventGroupSubscription subscription(0x1234, 0x0001, 0x0001);
 
     EXPECT_EQ(subscription.service_id, 0x1234u);
@@ -302,7 +319,8 @@ TEST_F(SdTest, Subscription) {
 }
 
 // Test field initialization safety
-TEST_F(SdTest, FieldInitializationSafety) {
+TEST_F(SdTest, FieldInitializationSafety)
+{
     // Test that all SD message fields are properly initialized
     // This prevents indeterminate values on the wire if constructors change
 
@@ -334,7 +352,8 @@ TEST_F(SdTest, FieldInitializationSafety) {
 }
 
 // Test result codes
-TEST_F(SdTest, SdResults) {
+TEST_F(SdTest, SdResults)
+{
     EXPECT_EQ(static_cast<int>(SdResult::SUCCESS), 0);
     EXPECT_EQ(static_cast<int>(SdResult::SERVICE_NOT_FOUND), 1);
     EXPECT_EQ(static_cast<int>(SdResult::SERVICE_ALREADY_EXISTS), 2);
@@ -350,7 +369,8 @@ TEST_F(SdTest, SdResults) {
 // Note: These tests validate the current implementation behavior.
 // Full SOME/IP-SD wire format compliance requires additional work.
 
-TEST_F(SdTest, ServiceEntrySerialization) {
+TEST_F(SdTest, ServiceEntrySerialization)
+{
     ServiceEntry original(EntryType::OFFER_SERVICE);
     original.set_service_id(0x1234);
     original.set_instance_id(0x5678);
@@ -363,7 +383,8 @@ TEST_F(SdTest, ServiceEntrySerialization) {
     EXPECT_GT(serialized.size(), 0u);
 }
 
-TEST_F(SdTest, EventGroupEntrySerialization) {
+TEST_F(SdTest, EventGroupEntrySerialization)
+{
     EventGroupEntry original(EntryType::SUBSCRIBE_EVENTGROUP);
     original.set_service_id(0xABCD);
     original.set_instance_id(0x0001);
@@ -375,7 +396,8 @@ TEST_F(SdTest, EventGroupEntrySerialization) {
     EXPECT_GT(serialized.size(), 0u);
 }
 
-TEST_F(SdTest, IPv4MulticastOptionSerialization) {
+TEST_F(SdTest, IPv4MulticastOptionSerialization)
+{
     IPv4MulticastOption original;
     original.set_ipv4_address(0xEFFFFFFB);  // 239.255.255.251
     original.set_port(30490);
@@ -384,7 +406,8 @@ TEST_F(SdTest, IPv4MulticastOptionSerialization) {
     EXPECT_GT(serialized.size(), 0u);
 }
 
-TEST_F(SdTest, SdMessageSerialization) {
+TEST_F(SdTest, SdMessageSerialization)
+{
     SdMessage original;
     original.set_reboot(true);
     original.set_unicast(false);
@@ -404,7 +427,7 @@ TEST_F(SdTest, SdMessageSerialization) {
 
     auto serialized = original.serialize();
     EXPECT_GT(serialized.size(), 0u);
-    
+
     // Verify flags are set correctly in first byte
     EXPECT_EQ(serialized[0] & 0x80, 0x80);  // Reboot flag
 }
@@ -414,15 +437,17 @@ TEST_F(SdTest, SdMessageSerialization) {
 // ============================================================================
 
 class SdIntegrationTest : public ::testing::Test {
-protected:
+   protected:
     static constexpr uint16_t TEST_PORT_BASE = 40000;
     static std::atomic<uint16_t> port_counter;
 
-    uint16_t get_unique_port() {
+    uint16_t get_unique_port()
+    {
         return TEST_PORT_BASE + port_counter.fetch_add(1);
     }
 
-    SdConfig create_test_config(uint16_t unicast_port, uint16_t multicast_port) {
+    SdConfig create_test_config(uint16_t unicast_port, uint16_t multicast_port)
+    {
         SdConfig config;
         config.unicast_address = "127.0.0.1";
         config.unicast_port = unicast_port;
@@ -437,7 +462,8 @@ protected:
 
 std::atomic<uint16_t> SdIntegrationTest::port_counter{0};
 
-TEST_F(SdIntegrationTest, ServerInitializeAndShutdown) {
+TEST_F(SdIntegrationTest, ServerInitializeAndShutdown)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdServer server(config);
 
@@ -451,7 +477,8 @@ TEST_F(SdIntegrationTest, ServerInitializeAndShutdown) {
     EXPECT_FALSE(server.is_ready());
 }
 
-TEST_F(SdIntegrationTest, ClientInitializeAndShutdown) {
+TEST_F(SdIntegrationTest, ClientInitializeAndShutdown)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdClient client(config);
 
@@ -465,7 +492,8 @@ TEST_F(SdIntegrationTest, ClientInitializeAndShutdown) {
     EXPECT_FALSE(client.is_ready());
 }
 
-TEST_F(SdIntegrationTest, ServerOfferService) {
+TEST_F(SdIntegrationTest, ServerOfferService)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdServer server(config);
     ASSERT_TRUE(server.initialize());
@@ -484,7 +512,8 @@ TEST_F(SdIntegrationTest, ServerOfferService) {
     server.shutdown();
 }
 
-TEST_F(SdIntegrationTest, ServerOfferMultipleServices) {
+TEST_F(SdIntegrationTest, ServerOfferMultipleServices)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdServer server(config);
     ASSERT_TRUE(server.initialize());
@@ -502,7 +531,8 @@ TEST_F(SdIntegrationTest, ServerOfferMultipleServices) {
     server.shutdown();
 }
 
-TEST_F(SdIntegrationTest, ServerStopOfferService) {
+TEST_F(SdIntegrationTest, ServerStopOfferService)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdServer server(config);
     ASSERT_TRUE(server.initialize());
@@ -521,7 +551,8 @@ TEST_F(SdIntegrationTest, ServerStopOfferService) {
     server.shutdown();
 }
 
-TEST_F(SdIntegrationTest, ServerUpdateServiceTTL) {
+TEST_F(SdIntegrationTest, ServerUpdateServiceTTL)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdServer server(config);
     ASSERT_TRUE(server.initialize());
@@ -543,7 +574,8 @@ TEST_F(SdIntegrationTest, ServerUpdateServiceTTL) {
     server.shutdown();
 }
 
-TEST_F(SdIntegrationTest, ClientGetAvailableServicesEmpty) {
+TEST_F(SdIntegrationTest, ClientGetAvailableServicesEmpty)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdClient client(config);
     ASSERT_TRUE(client.initialize());
@@ -557,7 +589,8 @@ TEST_F(SdIntegrationTest, ClientGetAvailableServicesEmpty) {
     client.shutdown();
 }
 
-TEST_F(SdIntegrationTest, ClientSubscribeUnsubscribeService) {
+TEST_F(SdIntegrationTest, ClientSubscribeUnsubscribeService)
+{
     auto config = create_test_config(get_unique_port(), get_unique_port());
     SdClient client(config);
     ASSERT_TRUE(client.initialize());
@@ -566,10 +599,8 @@ TEST_F(SdIntegrationTest, ClientSubscribeUnsubscribeService) {
     std::atomic<int> unavailable_count{0};
 
     bool sub_result = client.subscribe_service(
-        0x1234,
-        [&](const ServiceInstance&) { available_count++; },
-        [&](const ServiceInstance&) { unavailable_count++; }
-    );
+        0x1234, [&](const ServiceInstance&) { available_count++; },
+        [&](const ServiceInstance&) { unavailable_count++; });
     EXPECT_TRUE(sub_result);
 
     bool unsub_result = client.unsubscribe_service(0x1234);
@@ -585,26 +616,22 @@ TEST_F(SdIntegrationTest, ClientSubscribeUnsubscribeService) {
 // SD Helper Function Tests
 // ============================================================================
 
-TEST_F(SdTest, IPv4AddressConversion) {
+TEST_F(SdTest, IPv4AddressConversion)
+{
     IPv4EndpointOption option;
 
     // Test various IP addresses
-    std::vector<std::string> test_addresses = {
-        "0.0.0.0",
-        "127.0.0.1",
-        "192.168.1.100",
-        "10.0.0.1",
-        "255.255.255.255"
-    };
+    std::vector<std::string> test_addresses = {"0.0.0.0", "127.0.0.1", "192.168.1.100", "10.0.0.1",
+                                               "255.255.255.255"};
 
     for (const auto& addr : test_addresses) {
         option.set_ipv4_address_from_string(addr);
-        EXPECT_EQ(option.get_ipv4_address_string(), addr)
-            << "Round-trip failed for: " << addr;
+        EXPECT_EQ(option.get_ipv4_address_string(), addr) << "Round-trip failed for: " << addr;
     }
 }
 
-TEST_F(SdTest, PortConversion) {
+TEST_F(SdTest, PortConversion)
+{
     IPv4EndpointOption option;
 
     // Test various ports
@@ -612,7 +639,6 @@ TEST_F(SdTest, PortConversion) {
 
     for (uint16_t port : test_ports) {
         option.set_port(port);
-        EXPECT_EQ(option.get_port(), port)
-            << "Round-trip failed for port: " << port;
+        EXPECT_EQ(option.get_port(), port) << "Round-trip failed for port: " << port;
     }
 }

@@ -14,11 +14,11 @@
 #ifndef SOMEIP_TP_TYPES_H
 #define SOMEIP_TP_TYPES_H
 
-#include <cstdint>
-#include <vector>
-#include <memory>
 #include <chrono>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <vector>
 
 namespace someip {
 namespace tp {
@@ -42,33 +42,33 @@ enum class TpResult : uint8_t {
  * @brief TP message types
  */
 enum class TpMessageType : uint8_t {
-    FIRST_SEGMENT = 0x20,    // First segment of a multi-segment message
-    CONSECUTIVE_SEGMENT = 0x21, // Consecutive segments
-    LAST_SEGMENT = 0x22,    // Last segment of a multi-segment message
-    SINGLE_MESSAGE = 0x23   // Single message that fits in one segment
+    FIRST_SEGMENT = 0x20,        // First segment of a multi-segment message
+    CONSECUTIVE_SEGMENT = 0x21,  // Consecutive segments
+    LAST_SEGMENT = 0x22,         // Last segment of a multi-segment message
+    SINGLE_MESSAGE = 0x23        // Single message that fits in one segment
 };
 
 /**
  * @brief TP segmentation configuration
  */
 struct TpConfig {
-    uint32_t max_segment_size{1400};        // Maximum segment payload size (bytes)
-    uint32_t max_message_size{1000000};     // Maximum total message size (1MB default)
-    uint8_t max_retries{3};                 // Maximum retransmission attempts
-    std::chrono::milliseconds retry_timeout{500};      // Timeout between retries
-    std::chrono::milliseconds reassembly_timeout{5000}; // Timeout for reassembly
-    uint32_t max_concurrent_transfers{10}; // Maximum concurrent transfers
-    bool enable_acknowledgments{true};     // Enable acknowledgment mechanism
+    uint32_t max_segment_size{1400};                     // Maximum segment payload size (bytes)
+    uint32_t max_message_size{1000000};                  // Maximum total message size (1MB default)
+    uint8_t max_retries{3};                              // Maximum retransmission attempts
+    std::chrono::milliseconds retry_timeout{500};        // Timeout between retries
+    std::chrono::milliseconds reassembly_timeout{5000};  // Timeout for reassembly
+    uint32_t max_concurrent_transfers{10};               // Maximum concurrent transfers
+    bool enable_acknowledgments{true};                   // Enable acknowledgment mechanism
 };
 
 /**
  * @brief TP segment header
  */
 struct TpSegmentHeader {
-    uint32_t message_length{0};     // Total message length
-    uint16_t segment_offset{0};     // Offset of this segment in the message
-    uint16_t segment_length{0};     // Length of this segment's payload
-    uint8_t sequence_number{0};     // Sequence number for ordering
+    uint32_t message_length{0};  // Total message length
+    uint16_t segment_offset{0};  // Offset of this segment in the message
+    uint16_t segment_length{0};  // Length of this segment's payload
+    uint8_t sequence_number{0};  // Sequence number for ordering
     TpMessageType message_type{TpMessageType::SINGLE_MESSAGE};  // Type of TP message
 
     TpSegmentHeader() = default;
@@ -90,16 +90,16 @@ struct TpSegment {
  * @brief TP message being reassembled
  */
 struct TpReassemblyBuffer {
-    uint32_t message_id{0};                    // SOME/IP message ID
-    uint32_t total_length{0};                  // Total expected message length
-    std::vector<uint8_t> received_data;     // Buffer for received data
-    std::vector<bool> received_segments;    // Track which segments received
+    uint32_t message_id{0};               // SOME/IP message ID
+    uint32_t total_length{0};             // Total expected message length
+    std::vector<uint8_t> received_data;   // Buffer for received data
+    std::vector<bool> received_segments;  // Track which segments received
     std::chrono::steady_clock::time_point start_time{std::chrono::steady_clock::now()};
     uint8_t last_sequence_number{0};
     bool complete{false};
 
-    TpReassemblyBuffer(uint32_t msg_id, uint32_t length)
-        : message_id(msg_id), total_length(length) {
+    TpReassemblyBuffer(uint32_t msg_id, uint32_t length) : message_id(msg_id), total_length(length)
+    {
         received_data.resize(length);
         start_time = std::chrono::steady_clock::now();
     }
@@ -115,14 +115,14 @@ struct TpReassemblyBuffer {
  */
 enum class TpTransferState : uint8_t {
     IDLE,
-    SEGMENTING,      // Sender: breaking message into segments
-    SENDING,         // Sender: sending segments
-    WAITING_ACK,     // Sender: waiting for acknowledgments
-    RECEIVING,       // Receiver: receiving segments
-    REASSEMBLING,    // Receiver: reassembling message
-    COMPLETE,        // Transfer completed successfully
-    FAILED,          // Transfer failed
-    TIMEOUT          // Transfer timed out
+    SEGMENTING,    // Sender: breaking message into segments
+    SENDING,       // Sender: sending segments
+    WAITING_ACK,   // Sender: waiting for acknowledgments
+    RECEIVING,     // Receiver: receiving segments
+    REASSEMBLING,  // Receiver: reassembling message
+    COMPLETE,      // Transfer completed successfully
+    FAILED,        // Transfer failed
+    TIMEOUT        // Transfer timed out
 };
 
 /**
@@ -140,8 +140,8 @@ struct TpTransfer {
 
     TpTransfer() = default;
 
-    TpTransfer(uint32_t id, uint32_t msg_id)
-        : transfer_id(id), message_id(msg_id) {
+    TpTransfer(uint32_t id, uint32_t msg_id) : transfer_id(id), message_id(msg_id)
+    {
         start_time = std::chrono::steady_clock::now();
         last_activity = start_time;
     }
@@ -151,8 +151,10 @@ struct TpTransfer {
  * @brief TP callback types
  */
 using TpCompletionCallback = std::function<void(uint32_t transfer_id, TpResult result)>;
-using TpProgressCallback = std::function<void(uint32_t transfer_id, uint32_t bytes_transferred, uint32_t total_bytes)>;
-using TpMessageCallback = std::function<void(uint32_t message_id, const std::vector<uint8_t>& data)>;
+using TpProgressCallback =
+    std::function<void(uint32_t transfer_id, uint32_t bytes_transferred, uint32_t total_bytes)>;
+using TpMessageCallback =
+    std::function<void(uint32_t message_id, const std::vector<uint8_t>& data)>;
 
 /**
  * @brief TP statistics
@@ -167,7 +169,7 @@ struct TpStatistics {
     uint32_t errors{0};
 };
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip
 
-#endif // SOMEIP_TP_TYPES_H
+#endif  // SOMEIP_TP_TYPES_H

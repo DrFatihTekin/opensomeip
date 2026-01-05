@@ -14,9 +14,10 @@
 #ifndef SOMEIP_SD_CLIENT_H
 #define SOMEIP_SD_CLIENT_H
 
-#include "sd_types.h"
 #include <memory>
 #include <vector>
+
+#include "sd_types.h"
 
 namespace someip {
 namespace sd {
@@ -33,7 +34,7 @@ class SdClientImpl;
  * to event groups using the SOME/IP-SD protocol.
  */
 class SdClient {
-public:
+   public:
     /**
      * @brief Constructor
      * @param config SD configuration
@@ -70,9 +71,8 @@ public:
      * @param timeout Search timeout (0 = use default)
      * @return true if search initiated, false on error
      */
-    bool find_service(uint16_t service_id,
-                     FindServiceCallback callback,
-                     std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
+    bool find_service(uint16_t service_id, FindServiceCallback callback,
+                      std::chrono::milliseconds timeout = std::chrono::milliseconds(0));
 
     /**
      * @brief Subscribe to service availability notifications
@@ -82,9 +82,8 @@ public:
      * @param unavailable_callback Callback when service becomes unavailable
      * @return true if subscription successful, false on error
      */
-    bool subscribe_service(uint16_t service_id,
-                          ServiceAvailableCallback available_callback,
-                          ServiceUnavailableCallback unavailable_callback);
+    bool subscribe_service(uint16_t service_id, ServiceAvailableCallback available_callback,
+                           ServiceUnavailableCallback unavailable_callback);
 
     /**
      * @brief Unsubscribe from service availability notifications
@@ -143,11 +142,11 @@ public:
     };
     Statistics get_statistics() const;
 
-private:
+   private:
     std::unique_ptr<SdClientImpl> impl_;
 };
 
-} // namespace sd
-} // namespace someip
+}  // namespace sd
+}  // namespace someip
 
-#endif // SOMEIP_SD_CLIENT_H
+#endif  // SOMEIP_SD_CLIENT_H

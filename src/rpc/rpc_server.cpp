@@ -12,34 +12,39 @@
  ********************************************************************************/
 
 #include "rpc/rpc_server.h"
+
+#include <atomic>
+#include <mutex>
+#include <unordered_map>
+
+#include "common/result.h"
 #include "rpc/rpc_types.h"
-#include "transport/udp_transport.h"
+#include "someip/message.h"
 #include "transport/endpoint.h"
 #include "transport/transport.h"
-#include "someip/message.h"
-#include "common/result.h"
-#include <unordered_map>
-#include <mutex>
-#include <atomic>
+#include "transport/udp_transport.h"
 
 namespace someip {
 namespace rpc {
 
 class RpcServerImpl : public transport::ITransportListener {
-public:
+   public:
     RpcServerImpl(uint16_t service_id)
         : service_id_(service_id),
-          transport_(std::make_shared<transport::UdpTransport>(transport::Endpoint("127.0.0.1", 30490))),
-          running_(false) {
-
+          transport_(
+              std::make_shared<transport::UdpTransport>(transport::Endpoint("127.0.0.1", 30490))),
+          running_(false)
+    {
         transport_->set_listener(this);
     }
 
-    ~RpcServerImpl() {
+    ~RpcServerImpl()
+    {
         shutdown();
     }
 
-    bool initialize() {
+    bool initialize()
+    {
         if (running_) {
             return true;
         }
@@ -52,7 +57,8 @@ public:
         return true;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         if (!running_) {
             return;
         }
@@ -66,7 +72,8 @@ public:
         transport_->stop();
     }
 
-    bool register_method(MethodId method_id, MethodHandler handler) {
+    bool register_method(MethodId method_id, MethodHandler handler)
+    {
         std::scoped_lock lock(methods_mutex_);
 
         // Check if already registered
@@ -77,17 +84,20 @@ public:
         return !already_exists;
     }
 
-    bool unregister_method(MethodId method_id) {
+    bool unregister_method(MethodId method_id)
+    {
         std::scoped_lock lock(methods_mutex_);
         return method_handlers_.erase(method_id) > 0;
     }
 
-    bool is_method_registered(MethodId method_id) const {
+    bool is_method_registered(MethodId method_id) const
+    {
         std::scoped_lock lock(methods_mutex_);
         return method_handlers_.find(method_id) != method_handlers_.end();
     }
 
-    std::vector<MethodId> get_registered_methods() const {
+    std::vector<MethodId> get_registered_methods() const
+    {
         std::scoped_lock lock(methods_mutex_);
         std::vector<MethodId> methods;
         methods.reserve(method_handlers_.size());
@@ -97,17 +107,20 @@ public:
         return methods;
     }
 
-    bool is_ready() const {
+    bool is_ready() const
+    {
         return running_ && transport_->is_connected();
     }
 
-    RpcServer::Statistics get_statistics() const {
+    RpcServer::Statistics get_statistics() const
+    {
         // TODO: Implement statistics tracking
         return RpcServer::Statistics{};
     }
 
-private:
-    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override {
+   private:
+    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override
+    {
         // Check if this is for our service and is a request
         if (message->get_service_id() != service_id_ || !message->is_request()) {
             return;
@@ -129,33 +142,38 @@ private:
         // Process the method call
         std::vector<uint8_t> output_params;
         RpcResult result = handler(message->get_client_id(), message->get_session_id(),
-                                  message->get_payload(), output_params);
+                                   message->get_payload(), output_params);
 
         // Send response
         if (result == RpcResult::SUCCESS) {
             send_success_response(message, sender, output_params);
-        } else {
+        }
+        else {
             send_error_response(message, sender, map_rpc_result_to_return_code(result));
         }
     }
 
-    void on_connection_lost(const transport::Endpoint& endpoint) override {
+    void on_connection_lost(const transport::Endpoint& endpoint) override
+    {
         // TODO: Handle connection loss
     }
 
-    void on_connection_established(const transport::Endpoint& endpoint) override {
+    void on_connection_established(const transport::Endpoint& endpoint) override
+    {
         // TODO: Handle connection establishment
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         // TODO: Handle transport errors
     }
 
     void send_success_response(MessagePtr request, const transport::Endpoint& sender,
-                              const std::vector<uint8_t>& return_values) {
+                               const std::vector<uint8_t>& return_values)
+    {
         MessageId response_msg_id(request->get_service_id(), request->get_method_id());
-        Message response(response_msg_id, request->get_request_id(),
-                        MessageType::RESPONSE, ReturnCode::E_OK);
+        Message response(response_msg_id, request->get_request_id(), MessageType::RESPONSE,
+                         ReturnCode::E_OK);
         response.set_payload(return_values);
 
         Result result = transport_->send_message(response, sender);
@@ -164,10 +182,12 @@ private:
         }
     }
 
-    void send_error_response(MessagePtr request, const transport::Endpoint& sender, ReturnCode error_code) {
+    void send_error_response(MessagePtr request, const transport::Endpoint& sender,
+                             ReturnCode error_code)
+    {
         MessageId response_msg_id(request->get_service_id(), request->get_method_id());
-        Message response(response_msg_id, request->get_request_id(),
-                        MessageType::ERROR, error_code);
+        Message response(response_msg_id, request->get_request_id(), MessageType::ERROR,
+                         error_code);
 
         Result result = transport_->send_message(response, sender);
         if (result != Result::SUCCESS) {
@@ -175,7 +195,8 @@ private:
         }
     }
 
-    ReturnCode map_rpc_result_to_return_code(RpcResult result) {
+    ReturnCode map_rpc_result_to_return_code(RpcResult result)
+    {
         switch (result) {
             case RpcResult::SUCCESS:
                 return ReturnCode::E_OK;
@@ -202,43 +223,51 @@ private:
 };
 
 // RpcServer implementation
-RpcServer::RpcServer(uint16_t service_id)
-    : impl_(std::make_unique<RpcServerImpl>(service_id)) {
+RpcServer::RpcServer(uint16_t service_id) : impl_(std::make_unique<RpcServerImpl>(service_id))
+{
 }
 
 RpcServer::~RpcServer() = default;
 
-bool RpcServer::initialize() {
+bool RpcServer::initialize()
+{
     return impl_->initialize();
 }
 
-void RpcServer::shutdown() {
+void RpcServer::shutdown()
+{
     impl_->shutdown();
 }
 
-bool RpcServer::register_method(MethodId method_id, MethodHandler handler) {
+bool RpcServer::register_method(MethodId method_id, MethodHandler handler)
+{
     return impl_->register_method(method_id, handler);
 }
 
-bool RpcServer::unregister_method(MethodId method_id) {
+bool RpcServer::unregister_method(MethodId method_id)
+{
     return impl_->unregister_method(method_id);
 }
 
-bool RpcServer::is_method_registered(MethodId method_id) const {
+bool RpcServer::is_method_registered(MethodId method_id) const
+{
     return impl_->is_method_registered(method_id);
 }
 
-std::vector<MethodId> RpcServer::get_registered_methods() const {
+std::vector<MethodId> RpcServer::get_registered_methods() const
+{
     return impl_->get_registered_methods();
 }
 
-bool RpcServer::is_ready() const {
+bool RpcServer::is_ready() const
+{
     return impl_->is_ready();
 }
 
-RpcServer::Statistics RpcServer::get_statistics() const {
+RpcServer::Statistics RpcServer::get_statistics() const
+{
     return impl_->get_statistics();
 }
 
-} // namespace rpc
-} // namespace someip
+}  // namespace rpc
+}  // namespace someip

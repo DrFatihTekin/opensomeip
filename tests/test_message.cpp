@@ -12,23 +12,27 @@
  ********************************************************************************/
 
 #include <gtest/gtest.h>
-#include "someip/message.h"
+
 #include "serialization/serializer.h"
+#include "someip/message.h"
 
 using namespace someip;
 
 class MessageTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         // Setup code
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // Cleanup code
     }
 };
 
-TEST_F(MessageTest, DefaultConstructor) {
+TEST_F(MessageTest, DefaultConstructor)
+{
     Message msg;
 
     EXPECT_EQ(msg.get_service_id(), 0);
@@ -41,7 +45,8 @@ TEST_F(MessageTest, DefaultConstructor) {
     EXPECT_TRUE(msg.is_valid());
 }
 
-TEST_F(MessageTest, ConstructorWithIds) {
+TEST_F(MessageTest, ConstructorWithIds)
+{
     MessageId msg_id(0x1234, 0x5678);
     RequestId req_id(0x9ABC, 0xDEF0);
 
@@ -56,7 +61,8 @@ TEST_F(MessageTest, ConstructorWithIds) {
     EXPECT_TRUE(msg.is_valid());
 }
 
-TEST_F(MessageTest, SettersAndGetters) {
+TEST_F(MessageTest, SettersAndGetters)
+{
     Message msg;
 
     msg.set_service_id(0x1234);
@@ -80,7 +86,8 @@ TEST_F(MessageTest, SettersAndGetters) {
     EXPECT_TRUE(msg.is_valid());
 }
 
-TEST_F(MessageTest, SerializationRoundTrip) {
+TEST_F(MessageTest, SerializationRoundTrip)
+{
     // Create a message with payload
     MessageId msg_id(0x1234, 0x5678);
     RequestId req_id(0x9ABC, 0xDEF0);
@@ -111,7 +118,8 @@ TEST_F(MessageTest, SerializationRoundTrip) {
     EXPECT_TRUE(deserialized.is_valid());
 }
 
-TEST_F(MessageTest, Validation) {
+TEST_F(MessageTest, Validation)
+{
     Message msg;
 
     // Valid message
@@ -133,7 +141,8 @@ TEST_F(MessageTest, Validation) {
     EXPECT_FALSE(msg.has_valid_header());
 }
 
-TEST_F(MessageTest, StringRepresentation) {
+TEST_F(MessageTest, StringRepresentation)
+{
     MessageId msg_id(0x1234, 0x5678);
     RequestId req_id(0x9ABC, 0xDEF0);
     Message msg(msg_id, req_id);
@@ -146,7 +155,8 @@ TEST_F(MessageTest, StringRepresentation) {
     EXPECT_NE(str.find("session_id=0xdef0"), std::string::npos);
 }
 
-TEST_F(MessageTest, CopyAndMove) {
+TEST_F(MessageTest, CopyAndMove)
+{
     MessageId msg_id(0x1234, 0x5678);
     RequestId req_id(0x9ABC, 0xDEF0);
     Message original(msg_id, req_id);
@@ -167,7 +177,8 @@ TEST_F(MessageTest, CopyAndMove) {
     EXPECT_FALSE(original.is_valid());
 }
 
-TEST_F(MessageTest, MessageTypeHelpers) {
+TEST_F(MessageTest, MessageTypeHelpers)
+{
     Message request_msg;
     request_msg.set_message_type(MessageType::REQUEST);
     EXPECT_TRUE(request_msg.is_request());
@@ -184,7 +195,8 @@ TEST_F(MessageTest, MessageTypeHelpers) {
     EXPECT_FALSE(notification_msg.is_response());
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

@@ -12,40 +12,45 @@
  ********************************************************************************/
 
 #include "rpc/rpc_client.h"
+
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <future>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
+
+#include "core/session_manager.h"
 #include "rpc/rpc_types.h"
-#include "transport/udp_transport.h"
+#include "someip/message.h"
 #include "transport/endpoint.h"
 #include "transport/transport.h"
-#include "someip/message.h"
-#include "core/session_manager.h"
-#include <unordered_map>
-#include <mutex>
-#include <atomic>
-#include <thread>
-#include <chrono>
-#include <future>
-#include <condition_variable>
+#include "transport/udp_transport.h"
 
 namespace someip {
 namespace rpc {
 
 class RpcClientImpl : public transport::ITransportListener {
-public:
+   public:
     RpcClientImpl(uint16_t client_id)
         : client_id_(client_id),
           session_manager_(std::make_unique<SessionManager>()),
-          transport_(std::make_shared<transport::UdpTransport>(transport::Endpoint("127.0.0.1", 0))),
+          transport_(
+              std::make_shared<transport::UdpTransport>(transport::Endpoint("127.0.0.1", 0))),
           next_call_handle_(1),
-          running_(false) {
-
+          running_(false)
+    {
         transport_->set_listener(this);
     }
 
-    ~RpcClientImpl() {
+    ~RpcClientImpl()
+    {
         shutdown();
     }
 
-    bool initialize() {
+    bool initialize()
+    {
         if (running_) {
             return true;
         }
@@ -58,7 +63,8 @@ public:
         return true;
     }
 
-    void shutdown() {
+    void shutdown()
+    {
         if (!running_) {
             return;
         }
@@ -70,8 +76,8 @@ public:
             std::scoped_lock lock(pending_calls_mutex_);
             for (auto& pair : pending_calls_) {
                 if (pair.second.callback) {
-                    RpcResponse response(pair.second.service_id, pair.second.method_id,
-                                       client_id_, pair.second.session_id, RpcResult::INTERNAL_ERROR);
+                    RpcResponse response(pair.second.service_id, pair.second.method_id, client_id_,
+                                         pair.second.session_id, RpcResult::INTERNAL_ERROR);
                     pair.second.callback(response);
                 }
             }
@@ -83,17 +89,16 @@ public:
 
     RpcSyncResult call_method_sync(uint16_t service_id, MethodId method_id,
                                    const std::vector<uint8_t>& parameters,
-                                   const RpcTimeout& timeout) {
-
+                                   const RpcTimeout& timeout)
+    {
         // Create promise/future for synchronization
         std::promise<RpcResponse> promise;
         auto future = promise.get_future();
 
         // Make async call with callback that sets the promise
-        auto handle = call_method_async(service_id, method_id, parameters,
-            [&promise](const RpcResponse& response) {
-                promise.set_value(response);
-            }, timeout);
+        auto handle = call_method_async(
+            service_id, method_id, parameters,
+            [&promise](const RpcResponse& response) { promise.set_value(response); }, timeout);
 
         if (handle == 0) {
             return {RpcResult::INTERNAL_ERROR, {}, std::chrono::milliseconds(0)};
@@ -107,16 +112,15 @@ public:
         }
 
         auto response = future.get();
-        auto response_time = std::chrono::milliseconds(0); // TODO: Track actual response time
+        auto response_time = std::chrono::milliseconds(0);  // TODO: Track actual response time
 
         return {response.result, response.return_values, response_time};
     }
 
     RpcCallHandle call_method_async(uint16_t service_id, MethodId method_id,
-                                    const std::vector<uint8_t>& parameters,
-                                    RpcCallback callback,
-                                    const RpcTimeout& timeout) {
-
+                                    const std::vector<uint8_t>& parameters, RpcCallback callback,
+                                    const RpcTimeout& timeout)
+    {
         if (!running_) {
             return 0;
         }
@@ -131,11 +135,8 @@ public:
         request.set_payload(parameters);
 
         // Create pending call record
-        PendingCall call_info{
-            service_id, method_id, session_id,
-            std::chrono::steady_clock::now(),
-            timeout, callback
-        };
+        PendingCall call_info{service_id, method_id, session_id, std::chrono::steady_clock::now(),
+                              timeout,    callback};
 
         RpcCallHandle handle;
         {
@@ -145,7 +146,7 @@ public:
         }
 
         // Send request
-        transport::Endpoint server_endpoint("127.0.0.1", 30490); // TODO: Make configurable
+        transport::Endpoint server_endpoint("127.0.0.1", 30490);  // TODO: Make configurable
         if (transport_->send_message(request, server_endpoint) != Result::SUCCESS) {
             std::scoped_lock lock(pending_calls_mutex_);
             pending_calls_.erase(handle);
@@ -155,7 +156,8 @@ public:
         return handle;
     }
 
-    bool cancel_call(RpcCallHandle handle) {
+    bool cancel_call(RpcCallHandle handle)
+    {
         std::scoped_lock lock(pending_calls_mutex_);
         auto it = pending_calls_.find(handle);
         if (it == pending_calls_.end()) {
@@ -164,8 +166,8 @@ public:
 
         // Call callback with cancellation result
         if (it->second.callback) {
-            RpcResponse response(it->second.service_id, it->second.method_id,
-                               client_id_, it->second.session_id, RpcResult::INTERNAL_ERROR);
+            RpcResponse response(it->second.service_id, it->second.method_id, client_id_,
+                                 it->second.session_id, RpcResult::INTERNAL_ERROR);
             it->second.callback(response);
         }
 
@@ -173,16 +175,18 @@ public:
         return true;
     }
 
-    bool is_ready() const {
+    bool is_ready() const
+    {
         return running_ && transport_->is_connected();
     }
 
-    RpcClient::Statistics get_statistics() const {
+    RpcClient::Statistics get_statistics() const
+    {
         // TODO: Implement statistics tracking
         return RpcClient::Statistics{};
     }
 
-private:
+   private:
     struct PendingCall {
         uint16_t service_id;
         MethodId method_id;
@@ -192,7 +196,8 @@ private:
         RpcCallback callback;
     };
 
-    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override {
+    void on_message_received(MessagePtr message, const transport::Endpoint& sender) override
+    {
         // Check if this is a response to one of our pending calls
         if (!message->is_response()) {
             return;
@@ -205,11 +210,11 @@ private:
             if (it->second.session_id == message->get_session_id() &&
                 it->second.service_id == message->get_service_id() &&
                 it->second.method_id == message->get_method_id()) {
-
                 // Create response
-                RpcResult result = (message->is_success()) ? RpcResult::SUCCESS : RpcResult::INTERNAL_ERROR;
+                RpcResult result =
+                    (message->is_success()) ? RpcResult::SUCCESS : RpcResult::INTERNAL_ERROR;
                 RpcResponse response(message->get_service_id(), message->get_method_id(),
-                                   message->get_client_id(), message->get_session_id(), result);
+                                     message->get_client_id(), message->get_session_id(), result);
                 response.return_values = message->get_payload();
 
                 // Call callback
@@ -224,15 +229,18 @@ private:
         }
     }
 
-    void on_connection_lost(const transport::Endpoint& endpoint) override {
+    void on_connection_lost(const transport::Endpoint& endpoint) override
+    {
         // TODO: Handle connection loss
     }
 
-    void on_connection_established(const transport::Endpoint& endpoint) override {
+    void on_connection_established(const transport::Endpoint& endpoint) override
+    {
         // TODO: Handle connection establishment
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         // TODO: Handle transport errors
     }
 
@@ -247,44 +255,50 @@ private:
 };
 
 // RpcClient implementation
-RpcClient::RpcClient(uint16_t client_id)
-    : impl_(std::make_unique<RpcClientImpl>(client_id)) {
+RpcClient::RpcClient(uint16_t client_id) : impl_(std::make_unique<RpcClientImpl>(client_id))
+{
 }
 
 RpcClient::~RpcClient() = default;
 
-bool RpcClient::initialize() {
+bool RpcClient::initialize()
+{
     return impl_->initialize();
 }
 
-void RpcClient::shutdown() {
+void RpcClient::shutdown()
+{
     impl_->shutdown();
 }
 
 RpcSyncResult RpcClient::call_method_sync(uint16_t service_id, MethodId method_id,
-                                         const std::vector<uint8_t>& parameters,
-                                         const RpcTimeout& timeout) {
+                                          const std::vector<uint8_t>& parameters,
+                                          const RpcTimeout& timeout)
+{
     return impl_->call_method_sync(service_id, method_id, parameters, timeout);
 }
 
 RpcCallHandle RpcClient::call_method_async(uint16_t service_id, MethodId method_id,
-                                          const std::vector<uint8_t>& parameters,
-                                          RpcCallback callback,
-                                          const RpcTimeout& timeout) {
+                                           const std::vector<uint8_t>& parameters,
+                                           RpcCallback callback, const RpcTimeout& timeout)
+{
     return impl_->call_method_async(service_id, method_id, parameters, callback, timeout);
 }
 
-bool RpcClient::cancel_call(RpcCallHandle handle) {
+bool RpcClient::cancel_call(RpcCallHandle handle)
+{
     return impl_->cancel_call(handle);
 }
 
-bool RpcClient::is_ready() const {
+bool RpcClient::is_ready() const
+{
     return impl_->is_ready();
 }
 
-RpcClient::Statistics RpcClient::get_statistics() const {
+RpcClient::Statistics RpcClient::get_statistics() const
+{
     return impl_->get_statistics();
 }
 
-} // namespace rpc
-} // namespace someip
+}  // namespace rpc
+}  // namespace someip

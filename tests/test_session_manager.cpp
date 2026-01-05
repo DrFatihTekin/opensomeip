@@ -12,32 +12,37 @@
  ********************************************************************************/
 
 #include <gtest/gtest.h>
+
 #include "core/session_manager.h"
 
 using namespace someip;
 
 class SessionManagerTest : public ::testing::Test {
-protected:
-    void SetUp() override {
+   protected:
+    void SetUp() override
+    {
         session_mgr_ = std::make_unique<SessionManager>();
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         session_mgr_.reset();
     }
 
     std::unique_ptr<SessionManager> session_mgr_;
 };
 
-TEST_F(SessionManagerTest, CreateSession) {
+TEST_F(SessionManagerTest, CreateSession)
+{
     uint16_t client_id = 0x1001;
     uint16_t session_id = session_mgr_->create_session(client_id);
 
-    EXPECT_NE(session_id, 0); // Session ID should not be 0
+    EXPECT_NE(session_id, 0);  // Session ID should not be 0
     EXPECT_TRUE(session_mgr_->validate_session(session_id));
 }
 
-TEST_F(SessionManagerTest, MultipleClients) {
+TEST_F(SessionManagerTest, MultipleClients)
+{
     uint16_t client1 = 0x1001;
     uint16_t client2 = 0x1002;
 
@@ -46,14 +51,16 @@ TEST_F(SessionManagerTest, MultipleClients) {
 
     EXPECT_TRUE(session_mgr_->validate_session(session1));
     EXPECT_TRUE(session_mgr_->validate_session(session2));
-    EXPECT_NE(session1, session2); // Different clients should get different sessions
+    EXPECT_NE(session1, session2);  // Different clients should get different sessions
 }
 
-TEST_F(SessionManagerTest, SessionNotFound) {
-    EXPECT_FALSE(session_mgr_->validate_session(9999)); // Non-existent session
+TEST_F(SessionManagerTest, SessionNotFound)
+{
+    EXPECT_FALSE(session_mgr_->validate_session(9999));  // Non-existent session
 }
 
-TEST_F(SessionManagerTest, GetSessionInfo) {
+TEST_F(SessionManagerTest, GetSessionInfo)
+{
     uint16_t client_id = 0x1001;
     uint16_t session_id = session_mgr_->create_session(client_id);
 
@@ -64,7 +71,8 @@ TEST_F(SessionManagerTest, GetSessionInfo) {
     EXPECT_EQ(session->state, SessionState::ACTIVE);
 }
 
-TEST_F(SessionManagerTest, CleanupExpiredSessions) {
+TEST_F(SessionManagerTest, CleanupExpiredSessions)
+{
     uint16_t client_id = 0x1001;
     uint16_t session_id = session_mgr_->create_session(client_id);
 
@@ -74,7 +82,8 @@ TEST_F(SessionManagerTest, CleanupExpiredSessions) {
     EXPECT_FALSE(session_mgr_->validate_session(session_id));
 }
 
-TEST_F(SessionManagerTest, SessionCount) {
+TEST_F(SessionManagerTest, SessionCount)
+{
     EXPECT_EQ(session_mgr_->get_active_session_count(), 0);
 
     session_mgr_->create_session(0x1001);
@@ -86,7 +95,8 @@ TEST_F(SessionManagerTest, SessionCount) {
     EXPECT_EQ(session_mgr_->get_active_session_count(), 0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

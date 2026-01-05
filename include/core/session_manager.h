@@ -14,23 +14,18 @@
 #ifndef SOMEIP_CORE_SESSION_MANAGER_H
 #define SOMEIP_CORE_SESSION_MANAGER_H
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
-#include <unordered_map>
 #include <mutex>
-#include <chrono>
+#include <unordered_map>
 
 namespace someip {
 
 /**
  * @brief Session state enumeration
  */
-enum class SessionState : uint8_t {
-    ACTIVE,
-    INACTIVE,
-    EXPIRED,
-    ERROR
-};
+enum class SessionState : uint8_t { ACTIVE, INACTIVE, EXPIRED, ERROR };
 
 /**
  * @brief Session information
@@ -42,14 +37,17 @@ struct Session {
     SessionState state{SessionState::ACTIVE};
 
     Session() = default;
-    Session(uint16_t sid, uint16_t cid)
-        : session_id(sid), client_id(cid) {}
+    Session(uint16_t sid, uint16_t cid) : session_id(sid), client_id(cid)
+    {
+    }
 
-    void update_activity() {
+    void update_activity()
+    {
         last_activity = std::chrono::steady_clock::now();
     }
 
-    bool is_expired(std::chrono::seconds timeout) const {
+    bool is_expired(std::chrono::seconds timeout) const
+    {
         auto now = std::chrono::steady_clock::now();
         return (now - last_activity) > timeout;
     }
@@ -65,7 +63,7 @@ class SessionManager;
  * ensuring unique session IDs and proper session lifecycle.
  */
 class SessionManager {
-public:
+   public:
     /**
      * @brief Constructor
      */
@@ -129,7 +127,7 @@ public:
      */
     size_t get_active_session_count() const;
 
-private:
+   private:
     std::unordered_map<uint16_t, std::shared_ptr<Session>> sessions_;
     mutable std::mutex sessions_mutex_;
     uint16_t next_session_id_{1};
@@ -139,6 +137,6 @@ private:
     SessionManager& operator=(const SessionManager&) = delete;
 };
 
-} // namespace someip
+}  // namespace someip
 
-#endif // SOMEIP_CORE_SESSION_MANAGER_H
+#endif  // SOMEIP_CORE_SESSION_MANAGER_H

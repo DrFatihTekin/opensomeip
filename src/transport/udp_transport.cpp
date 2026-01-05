@@ -12,32 +12,36 @@
  ********************************************************************************/
 
 #include "transport/udp_transport.h"
-#include "common/result.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
+
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <cstring>
+#include <fcntl.h>
 #include <iostream>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "common/result.h"
 
 namespace someip {
 namespace transport {
 
 UdpTransport::UdpTransport(const Endpoint& local_endpoint)
-    : local_endpoint_(local_endpoint),
-      running_(false) {
+    : local_endpoint_(local_endpoint), running_(false)
+{
     if (!local_endpoint_.is_valid()) {
         throw std::invalid_argument("Invalid local endpoint");
     }
 }
 
-UdpTransport::~UdpTransport() {
+UdpTransport::~UdpTransport()
+{
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall) - intentional cleanup
     stop();
 }
 
-Result UdpTransport::send_message(const Message& message, const Endpoint& endpoint) {
+Result UdpTransport::send_message(const Message& message, const Endpoint& endpoint)
+{
     if (!is_running()) {
         return Result::NOT_CONNECTED;
     }
@@ -56,7 +60,8 @@ Result UdpTransport::send_message(const Message& message, const Endpoint& endpoi
     return send_data(data, endpoint);
 }
 
-MessagePtr UdpTransport::receive_message() {
+MessagePtr UdpTransport::receive_message()
+{
     std::scoped_lock lock(queue_mutex_);
     if (receive_queue_.empty()) {
         return nullptr;
@@ -67,7 +72,8 @@ MessagePtr UdpTransport::receive_message() {
     return message;
 }
 
-Result UdpTransport::connect(const Endpoint& endpoint) {
+Result UdpTransport::connect(const Endpoint& endpoint)
+{
     // UDP is connectionless, so this just validates the endpoint
     if (!endpoint.is_valid()) {
         return Result::INVALID_ENDPOINT;
@@ -81,24 +87,29 @@ Result UdpTransport::connect(const Endpoint& endpoint) {
     return Result::SUCCESS;
 }
 
-Result UdpTransport::disconnect() {
+Result UdpTransport::disconnect()
+{
     // UDP is connectionless, nothing to disconnect
     return Result::SUCCESS;
 }
 
-bool UdpTransport::is_connected() const {
+bool UdpTransport::is_connected() const
+{
     return is_running() && socket_fd_ >= 0;
 }
 
-Endpoint UdpTransport::get_local_endpoint() const {
+Endpoint UdpTransport::get_local_endpoint() const
+{
     return local_endpoint_;
 }
 
-void UdpTransport::set_listener(ITransportListener* listener) {
+void UdpTransport::set_listener(ITransportListener* listener)
+{
     listener_ = listener;
 }
 
-Result UdpTransport::start() {
+Result UdpTransport::start()
+{
     if (is_running()) {
         return Result::SUCCESS;
     }
@@ -121,7 +132,8 @@ Result UdpTransport::start() {
     return Result::SUCCESS;
 }
 
-Result UdpTransport::stop() {
+Result UdpTransport::stop()
+{
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall) - safe: no override expected
     if (!running_.load()) {
         return Result::SUCCESS;
@@ -143,11 +155,13 @@ Result UdpTransport::stop() {
     return Result::SUCCESS;
 }
 
-bool UdpTransport::is_running() const {
+bool UdpTransport::is_running() const
+{
     return running_;
 }
 
-Result UdpTransport::join_multicast_group(const std::string& multicast_address) {
+Result UdpTransport::join_multicast_group(const std::string& multicast_address)
+{
     std::scoped_lock lock(socket_mutex_);
 
     if (socket_fd_ < 0) {
@@ -181,7 +195,8 @@ Result UdpTransport::join_multicast_group(const std::string& multicast_address) 
     return Result::SUCCESS;
 }
 
-Result UdpTransport::leave_multicast_group(const std::string& multicast_address) {
+Result UdpTransport::leave_multicast_group(const std::string& multicast_address)
+{
     std::scoped_lock lock(socket_mutex_);
 
     if (socket_fd_ < 0) {
@@ -203,7 +218,8 @@ Result UdpTransport::leave_multicast_group(const std::string& multicast_address)
     return Result::SUCCESS;
 }
 
-Result UdpTransport::create_socket() {
+Result UdpTransport::create_socket()
+{
     std::scoped_lock lock(socket_mutex_);
 
     socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -230,7 +246,8 @@ Result UdpTransport::create_socket() {
     return Result::SUCCESS;
 }
 
-Result UdpTransport::bind_socket() {
+Result UdpTransport::bind_socket()
+{
     std::scoped_lock lock(socket_mutex_);
 
     sockaddr_in addr = create_sockaddr(local_endpoint_);
@@ -241,7 +258,8 @@ Result UdpTransport::bind_socket() {
     return Result::SUCCESS;
 }
 
-Result UdpTransport::configure_multicast(const Endpoint& endpoint) {
+Result UdpTransport::configure_multicast(const Endpoint& endpoint)
+{
     if (!is_multicast_address(endpoint.get_address())) {
         return Result::INVALID_ENDPOINT;
     }
@@ -257,7 +275,8 @@ Result UdpTransport::configure_multicast(const Endpoint& endpoint) {
     return Result::SUCCESS;
 }
 
-void UdpTransport::receive_loop() {
+void UdpTransport::receive_loop()
+{
     std::vector<uint8_t> buffer(RECEIVE_BUFFER_SIZE);
 
     while (running_) {
@@ -280,7 +299,8 @@ void UdpTransport::receive_loop() {
                     listener_->on_message_received(message, sender);
                 }
             }
-        } else if (result == Result::NETWORK_ERROR) {
+        }
+        else if (result == Result::NETWORK_ERROR) {
             // Network error, notify listener
             if (listener_) {
                 listener_->on_error(result);
@@ -292,7 +312,8 @@ void UdpTransport::receive_loop() {
     }
 }
 
-Result UdpTransport::send_data(const std::vector<uint8_t>& data, const Endpoint& endpoint) {
+Result UdpTransport::send_data(const std::vector<uint8_t>& data, const Endpoint& endpoint)
+{
     std::scoped_lock lock(socket_mutex_);
 
     if (socket_fd_ < 0) {
@@ -301,7 +322,7 @@ Result UdpTransport::send_data(const std::vector<uint8_t>& data, const Endpoint&
 
     sockaddr_in dest_addr = create_sockaddr(endpoint);
     ssize_t sent = sendto(socket_fd_, data.data(), data.size(), 0,
-                         reinterpret_cast<sockaddr*>(&dest_addr), sizeof(dest_addr));
+                          reinterpret_cast<sockaddr*>(&dest_addr), sizeof(dest_addr));
 
     if (sent < 0) {
         return Result::NETWORK_ERROR;
@@ -314,7 +335,8 @@ Result UdpTransport::send_data(const std::vector<uint8_t>& data, const Endpoint&
     return Result::SUCCESS;
 }
 
-Result UdpTransport::receive_data(std::vector<uint8_t>& data, Endpoint& sender) {
+Result UdpTransport::receive_data(std::vector<uint8_t>& data, Endpoint& sender)
+{
     std::scoped_lock lock(socket_mutex_);
 
     if (socket_fd_ < 0) {
@@ -325,7 +347,7 @@ Result UdpTransport::receive_data(std::vector<uint8_t>& data, Endpoint& sender) 
     socklen_t addr_len = sizeof(src_addr);
 
     ssize_t received = recvfrom(socket_fd_, data.data(), data.size(), 0,
-                               reinterpret_cast<sockaddr*>(&src_addr), &addr_len);
+                                reinterpret_cast<sockaddr*>(&src_addr), &addr_len);
 
     if (received < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -340,7 +362,8 @@ Result UdpTransport::receive_data(std::vector<uint8_t>& data, Endpoint& sender) 
     return Result::SUCCESS;
 }
 
-sockaddr_in UdpTransport::create_sockaddr(const Endpoint& endpoint) const {
+sockaddr_in UdpTransport::create_sockaddr(const Endpoint& endpoint) const
+{
     sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -349,14 +372,16 @@ sockaddr_in UdpTransport::create_sockaddr(const Endpoint& endpoint) const {
     return addr;
 }
 
-Endpoint UdpTransport::sockaddr_to_endpoint(const sockaddr_in& addr) const {
+Endpoint UdpTransport::sockaddr_to_endpoint(const sockaddr_in& addr) const
+{
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &addr.sin_addr, ip_str, sizeof(ip_str));
 
     return Endpoint(ip_str, ntohs(addr.sin_port), TransportProtocol::UDP);
 }
 
-bool UdpTransport::is_multicast_address(const std::string& address) const {
+bool UdpTransport::is_multicast_address(const std::string& address) const
+{
     in_addr_t addr = inet_addr(address.c_str());
     if (addr == INADDR_NONE) {
         return false;
@@ -367,5 +392,5 @@ bool UdpTransport::is_multicast_address(const std::string& address) const {
     return (host_addr >= 0xE0000000) && (host_addr <= 0xEFFFFFFF);
 }
 
-} // namespace transport
-} // namespace someip
+}  // namespace transport
+}  // namespace someip

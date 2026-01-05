@@ -14,9 +14,10 @@
 #ifndef SOMEIP_RPC_SERVER_H
 #define SOMEIP_RPC_SERVER_H
 
-#include "rpc/rpc_types.h"
-#include <memory>
 #include <functional>
+#include <memory>
+
+#include "rpc/rpc_types.h"
 
 namespace someip {
 namespace rpc {
@@ -32,12 +33,9 @@ class RpcServerImpl;
  * Function signature for handling RPC method calls on the server side.
  * Receives method parameters and returns result with output parameters.
  */
-using MethodHandler = std::function<RpcResult(
-    uint16_t client_id,
-    uint16_t session_id,
-    const std::vector<uint8_t>& input_params,
-    std::vector<uint8_t>& output_params
-)>;
+using MethodHandler = std::function<RpcResult(uint16_t client_id, uint16_t session_id,
+                                              const std::vector<uint8_t>& input_params,
+                                              std::vector<uint8_t>& output_params)>;
 
 /**
  * @brief SOME/IP RPC Server Interface
@@ -46,7 +44,7 @@ using MethodHandler = std::function<RpcResult(
  * to incoming RPC method calls from clients.
  */
 class RpcServer {
-public:
+   public:
     /**
      * @brief Constructor
      * @param service_id Service identifier this server handles
@@ -128,11 +126,11 @@ public:
     };
     Statistics get_statistics() const;
 
-private:
+   private:
     std::unique_ptr<RpcServerImpl> impl_;
 };
 
-} // namespace rpc
-} // namespace someip
+}  // namespace rpc
+}  // namespace someip
 
-#endif // SOMEIP_RPC_SERVER_H
+#endif  // SOMEIP_RPC_SERVER_H

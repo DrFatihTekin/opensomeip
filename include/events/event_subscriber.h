@@ -14,9 +14,10 @@
 #ifndef SOMEIP_EVENTS_SUBSCRIBER_H
 #define SOMEIP_EVENTS_SUBSCRIBER_H
 
-#include "event_types.h"
 #include <memory>
 #include <vector>
+
+#include "event_types.h"
 
 namespace someip {
 namespace events {
@@ -33,7 +34,7 @@ class EventSubscriberImpl;
  * from services and receive notifications when events occur.
  */
 class EventSubscriber {
-public:
+   public:
     /**
      * @brief Constructor
      * @param client_id Client identifier
@@ -74,9 +75,9 @@ public:
      * @return true if subscription request sent, false on error
      */
     bool subscribe_eventgroup(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id,
-                            EventNotificationCallback notification_callback,
-                            SubscriptionStatusCallback status_callback = nullptr,
-                            const std::vector<EventFilter>& filters = {});
+                              EventNotificationCallback notification_callback,
+                              SubscriptionStatusCallback status_callback = nullptr,
+                              const std::vector<EventFilter>& filters = {});
 
     /**
      * @brief Unsubscribe from an event group
@@ -98,7 +99,7 @@ public:
      * @return true if request sent, false on error
      */
     bool request_field(uint16_t service_id, uint16_t instance_id, uint16_t event_id,
-                      EventNotificationCallback callback);
+                       EventNotificationCallback callback);
 
     /**
      * @brief Set event filter for selective notifications
@@ -110,7 +111,7 @@ public:
      * @return true if filters updated, false on error
      */
     bool set_event_filters(uint16_t service_id, uint16_t instance_id, uint16_t eventgroup_id,
-                         const std::vector<EventFilter>& filters);
+                           const std::vector<EventFilter>& filters);
 
     /**
      * @brief Get active subscriptions
@@ -128,7 +129,7 @@ public:
      * @return Current subscription state
      */
     SubscriptionState get_subscription_status(uint16_t service_id, uint16_t instance_id,
-                                            uint16_t eventgroup_id) const;
+                                              uint16_t eventgroup_id) const;
 
     /**
      * @brief Check if subscriber is initialized and ready
@@ -151,11 +152,11 @@ public:
     };
     Statistics get_statistics() const;
 
-private:
+   private:
     std::unique_ptr<EventSubscriberImpl> impl_;
 };
 
-} // namespace events
-} // namespace someip
+}  // namespace events
+}  // namespace someip
 
-#endif // SOMEIP_EVENTS_SUBSCRIBER_H
+#endif  // SOMEIP_EVENTS_SUBSCRIBER_H

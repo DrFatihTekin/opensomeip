@@ -14,8 +14,9 @@
 #ifndef SOMEIP_TP_SEGMENTER_H
 #define SOMEIP_TP_SEGMENTER_H
 
-#include "tp_types.h"
 #include <someip/message.h>
+
+#include "tp_types.h"
 
 namespace someip {
 namespace tp {
@@ -27,7 +28,7 @@ namespace tp {
  * with MTU limitations (typically UDP).
  */
 class TpSegmenter {
-public:
+   public:
     /**
      * @brief Constructor
      * @param config TP configuration
@@ -61,7 +62,8 @@ public:
      * @param segments Output vector for the created segments
      * @return SUCCESS if segmentation successful, error code otherwise
      */
-    TpResult segment_data(const std::vector<uint8_t>& message_data, std::vector<TpSegment>& segments);
+    TpResult segment_data(const std::vector<uint8_t>& message_data,
+                          std::vector<TpSegment>& segments);
 
     /**
      * @brief Update segmentation configuration
@@ -70,16 +72,15 @@ public:
      */
     void update_config(const TpConfig& config);
 
-private:
+   private:
     TpConfig config_;
     uint8_t next_sequence_number_{0};
 
-    TpResult create_multi_segments(const Message& message,
-                                 const std::vector<uint8_t>& payload,
-                                 std::vector<TpSegment>& segments);
+    TpResult create_multi_segments(const Message& message, const std::vector<uint8_t>& payload,
+                                   std::vector<TpSegment>& segments);
 };
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip
 
-#endif // SOMEIP_TP_SEGMENTER_H
+#endif  // SOMEIP_TP_SEGMENTER_H

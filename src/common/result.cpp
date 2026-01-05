@@ -1,9 +1,11 @@
 #include "common/result.h"
+
 #include <unordered_map>
 
 namespace someip {
 
-std::string to_string(Result result) {
+std::string to_string(Result result)
+{
     static const std::unordered_map<Result, std::string> result_strings = {
         {Result::SUCCESS, "SUCCESS"},
         {Result::NETWORK_ERROR, "NETWORK_ERROR"},
@@ -34,11 +36,10 @@ std::string to_string(Result result) {
         {Result::INVALID_ARGUMENT, "INVALID_ARGUMENT"},
         {Result::PERMISSION_DENIED, "PERMISSION_DENIED"},
         {Result::INTERNAL_ERROR, "INTERNAL_ERROR"},
-        {Result::UNKNOWN_ERROR, "UNKNOWN_ERROR"}
-    };
+        {Result::UNKNOWN_ERROR, "UNKNOWN_ERROR"}};
 
     auto it = result_strings.find(result);
     return (it != result_strings.end()) ? it->second : "UNKNOWN_RESULT";
 }
 
-} // namespace someip
+}  // namespace someip

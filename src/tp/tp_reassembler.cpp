@@ -12,23 +12,27 @@
  ********************************************************************************/
 
 #include "tp/tp_reassembler.h"
+
 #include <algorithm>
 #include <mutex>
 
 namespace someip {
 namespace tp {
 
-TpReassembler::TpReassembler(const TpConfig& config)
-    : config_(config) {
+TpReassembler::TpReassembler(const TpConfig& config) : config_(config)
+{
 }
 
 // NOLINTNEXTLINE(modernize-use-equals-default) - intentional cleanup with lock
-TpReassembler::~TpReassembler() {
+TpReassembler::~TpReassembler()
+{
     std::scoped_lock lock(buffers_mutex_);
     reassembly_buffers_.clear();
 }
 
-bool TpReassembler::process_segment(const TpSegment& segment, std::vector<uint8_t>& complete_message) {
+bool TpReassembler::process_segment(const TpSegment& segment,
+                                    std::vector<uint8_t>& complete_message)
+{
     if (!validate_segment(segment)) {
         return false;
     }
@@ -53,7 +57,8 @@ bool TpReassembler::process_segment(const TpSegment& segment, std::vector<uint8_
     return true;  // Segment processed but reassembly not complete
 }
 
-bool TpReassembler::validate_segment(const TpSegment& segment) const {
+bool TpReassembler::validate_segment(const TpSegment& segment) const
+{
     const auto config = get_config_copy();
 
     // Validate segment header
@@ -67,25 +72,28 @@ bool TpReassembler::validate_segment(const TpSegment& segment) const {
     }
 
     // Validate offset
-    if (segment.header.segment_offset + segment.header.segment_length > segment.header.message_length) {
+    if (segment.header.segment_offset + segment.header.segment_length >
+        segment.header.message_length) {
         return false;
     }
 
     return true;
 }
 
-TpReassemblyBuffer* TpReassembler::find_or_create_buffer(const TpSegment& segment) {
+TpReassemblyBuffer* TpReassembler::find_or_create_buffer(const TpSegment& segment)
+{
     auto it = reassembly_buffers_.find(segment.header.sequence_number);
 
     if (it == reassembly_buffers_.end()) {
         // Create new buffer for first segment
         if (segment.header.message_type == TpMessageType::FIRST_SEGMENT ||
             segment.header.message_type == TpMessageType::SINGLE_MESSAGE) {
-
-            auto buffer = std::make_unique<TpReassemblyBuffer>(
-                segment.header.sequence_number, segment.header.message_length);
-            it = reassembly_buffers_.emplace(segment.header.sequence_number, std::move(buffer)).first;
-        } else {
+            auto buffer = std::make_unique<TpReassemblyBuffer>(segment.header.sequence_number,
+                                                               segment.header.message_length);
+            it = reassembly_buffers_.emplace(segment.header.sequence_number, std::move(buffer))
+                     .first;
+        }
+        else {
             // Received consecutive/last segment without first segment
             return nullptr;
         }
@@ -94,7 +102,8 @@ TpReassemblyBuffer* TpReassembler::find_or_create_buffer(const TpSegment& segmen
     return it->second.get();
 }
 
-bool TpReassembler::add_segment_to_buffer(TpReassemblyBuffer& buffer, const TpSegment& segment) {
+bool TpReassembler::add_segment_to_buffer(TpReassemblyBuffer& buffer, const TpSegment& segment)
+{
     // Check if this segment was already received
     if (buffer.is_segment_received(segment.header.segment_offset, segment.header.segment_length)) {
         return true;  // Duplicate segment, ignore
@@ -113,24 +122,24 @@ bool TpReassembler::add_segment_to_buffer(TpReassemblyBuffer& buffer, const TpSe
         const size_t header_size = 16;  // SOME/IP header size
         if (segment.payload.size() > header_size) {
             bytes_received = segment.payload.size() - header_size;
-            std::copy(segment.payload.begin() + header_size,
-                     segment.payload.end(),
-                     buffer.received_data.begin() + segment.header.segment_offset);
+            std::copy(segment.payload.begin() + header_size, segment.payload.end(),
+                      buffer.received_data.begin() + segment.header.segment_offset);
         }
-    } else if (segment.header.message_type == TpMessageType::SINGLE_MESSAGE) {
+    }
+    else if (segment.header.message_type == TpMessageType::SINGLE_MESSAGE) {
         // Single message contains full SOME/IP message, extract payload only
         const size_t header_size = 16;  // SOME/IP header size
         if (segment.payload.size() > header_size) {
             bytes_received = segment.payload.size() - header_size;
-            std::copy(segment.payload.begin() + header_size,
-                     segment.payload.end(),
-                     buffer.received_data.begin());
+            std::copy(segment.payload.begin() + header_size, segment.payload.end(),
+                      buffer.received_data.begin());
         }
-    } else {
+    }
+    else {
         // Consecutive/last segments contain only payload data
         bytes_received = segment.payload.size();
         std::copy(segment.payload.begin(), segment.payload.end(),
-                 buffer.received_data.begin() + segment.header.segment_offset);
+                  buffer.received_data.begin() + segment.header.segment_offset);
     }
 
     // Mark the received bytes
@@ -142,12 +151,15 @@ bool TpReassembler::add_segment_to_buffer(TpReassemblyBuffer& buffer, const TpSe
     return true;
 }
 
-bool TpReassembler::is_reassembling(uint32_t message_id) const {
+bool TpReassembler::is_reassembling(uint32_t message_id) const
+{
     std::scoped_lock lock(buffers_mutex_);
     return reassembly_buffers_.find(message_id) != reassembly_buffers_.end();
 }
 
-bool TpReassembler::get_reassembly_progress(uint32_t message_id, uint32_t& received_bytes, uint32_t& total_bytes) const {
+bool TpReassembler::get_reassembly_progress(uint32_t message_id, uint32_t& received_bytes,
+                                            uint32_t& total_bytes) const
+{
     const auto config = get_config_copy();
 
     std::scoped_lock lock(buffers_mutex_);
@@ -176,12 +188,14 @@ bool TpReassembler::get_reassembly_progress(uint32_t message_id, uint32_t& recei
     return true;
 }
 
-void TpReassembler::cancel_reassembly(uint32_t message_id) {
+void TpReassembler::cancel_reassembly(uint32_t message_id)
+{
     std::scoped_lock lock(buffers_mutex_);
     reassembly_buffers_.erase(message_id);
 }
 
-void TpReassembler::process_timeouts() {
+void TpReassembler::process_timeouts()
+{
     const auto config = get_config_copy();
 
     std::scoped_lock lock(buffers_mutex_);
@@ -189,42 +203,49 @@ void TpReassembler::process_timeouts() {
     cleanup_completed_buffers();
 }
 
-size_t TpReassembler::get_active_reassemblies() const {
+size_t TpReassembler::get_active_reassemblies() const
+{
     std::scoped_lock lock(buffers_mutex_);
     return reassembly_buffers_.size();
 }
 
-void TpReassembler::update_config(const TpConfig& config) {
+void TpReassembler::update_config(const TpConfig& config)
+{
     std::scoped_lock lock(config_mutex_);
     config_ = config;
 }
 
-void TpReassembler::cleanup_completed_buffers() {
+void TpReassembler::cleanup_completed_buffers()
+{
     // Completed buffers are removed when reassembly finishes
 }
 
-void TpReassembler::cleanup_timed_out_buffers(const TpConfig& config) {
+void TpReassembler::cleanup_timed_out_buffers(const TpConfig& config)
+{
     auto now = std::chrono::steady_clock::now();
 
-    for (auto it = reassembly_buffers_.begin(); it != reassembly_buffers_.end(); ) {
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - it->second->start_time);
+    for (auto it = reassembly_buffers_.begin(); it != reassembly_buffers_.end();) {
+        auto elapsed =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->start_time);
 
         if (elapsed > config.reassembly_timeout) {
             it = reassembly_buffers_.erase(it);
-        } else {
+        }
+        else {
             ++it;
         }
     }
 }
 
-TpConfig TpReassembler::get_config_copy() const {
+TpConfig TpReassembler::get_config_copy() const
+{
     std::scoped_lock lock(config_mutex_);
     return config_;
 }
 
 // TpReassemblyBuffer implementation
-bool TpReassemblyBuffer::is_segment_received(uint16_t offset, uint16_t length) const {
+bool TpReassemblyBuffer::is_segment_received(uint16_t offset, uint16_t length) const
+{
     for (uint16_t i = 0; i < length; ++i) {
         size_t bit_index = offset + i;
         if (bit_index >= received_segments.size() || !received_segments[bit_index]) {
@@ -234,7 +255,8 @@ bool TpReassemblyBuffer::is_segment_received(uint16_t offset, uint16_t length) c
     return true;
 }
 
-void TpReassemblyBuffer::mark_segment_received(uint16_t offset, uint16_t length) {
+void TpReassemblyBuffer::mark_segment_received(uint16_t offset, uint16_t length)
+{
     // Ensure received_segments is large enough
     if (received_segments.size() < total_length) {
         received_segments.resize(total_length, false);
@@ -248,7 +270,8 @@ void TpReassemblyBuffer::mark_segment_received(uint16_t offset, uint16_t length)
     }
 }
 
-bool TpReassemblyBuffer::is_complete() const {
+bool TpReassemblyBuffer::is_complete() const
+{
     if (complete) {
         return true;
     }
@@ -263,12 +286,13 @@ bool TpReassemblyBuffer::is_complete() const {
     return true;
 }
 
-std::vector<uint8_t> TpReassemblyBuffer::get_complete_message() const {
+std::vector<uint8_t> TpReassemblyBuffer::get_complete_message() const
+{
     if (!is_complete()) {
         return {};
     }
     return received_data;
 }
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip

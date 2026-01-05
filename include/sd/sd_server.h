@@ -14,9 +14,10 @@
 #ifndef SOMEIP_SD_SERVER_H
 #define SOMEIP_SD_SERVER_H
 
-#include "sd_types.h"
 #include <memory>
 #include <vector>
+
+#include "sd_types.h"
 
 namespace someip {
 namespace sd {
@@ -33,7 +34,7 @@ class SdServerImpl;
  * responding to client find requests and managing service availability.
  */
 class SdServer {
-public:
+   public:
     /**
      * @brief Constructor
      * @param config SD configuration
@@ -70,9 +71,8 @@ public:
      * @param multicast_endpoint Multicast endpoint (optional)
      * @return true if service offered, false on error
      */
-    bool offer_service(const ServiceInstance& instance,
-                      const std::string& unicast_endpoint,
-                      const std::string& multicast_endpoint = "");
+    bool offer_service(const ServiceInstance& instance, const std::string& unicast_endpoint,
+                       const std::string& multicast_endpoint = "");
 
     /**
      * @brief Stop offering a service instance
@@ -104,8 +104,8 @@ public:
      * @return true if handled, false on error
      */
     bool handle_eventgroup_subscription(uint16_t service_id, uint16_t instance_id,
-                                       uint16_t eventgroup_id, const std::string& client_address,
-                                       bool acknowledge = true);
+                                        uint16_t eventgroup_id, const std::string& client_address,
+                                        bool acknowledge = true);
 
     /**
      * @brief Get currently offered services
@@ -135,11 +135,11 @@ public:
     };
     Statistics get_statistics() const;
 
-private:
+   private:
     std::unique_ptr<SdServerImpl> impl_;
 };
 
-} // namespace sd
-} // namespace someip
+}  // namespace sd
+}  // namespace someip
 
-#endif // SOMEIP_SD_SERVER_H
+#endif  // SOMEIP_SD_SERVER_H

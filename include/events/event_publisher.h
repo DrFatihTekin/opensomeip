@@ -14,9 +14,10 @@
 #ifndef SOMEIP_EVENTS_PUBLISHER_H
 #define SOMEIP_EVENTS_PUBLISHER_H
 
-#include "event_types.h"
 #include <memory>
 #include <vector>
+
+#include "event_types.h"
 
 namespace someip {
 namespace events {
@@ -33,7 +34,7 @@ class EventPublisherImpl;
  * to subscribed clients using the SOME/IP event mechanism.
  */
 class EventPublisher {
-public:
+   public:
     /**
      * @brief Constructor
      * @param service_id Service identifier
@@ -115,7 +116,7 @@ public:
      * @return true if subscription handled, false on error
      */
     bool handle_subscription(uint16_t eventgroup_id, uint16_t client_id,
-                           const std::vector<EventFilter>& filters = {});
+                             const std::vector<EventFilter>& filters = {});
 
     /**
      * @brief Handle event unsubscription
@@ -162,11 +163,11 @@ public:
     };
     Statistics get_statistics() const;
 
-private:
+   private:
     std::unique_ptr<EventPublisherImpl> impl_;
 };
 
-} // namespace events
-} // namespace someip
+}  // namespace events
+}  // namespace someip
 
-#endif // SOMEIP_EVENTS_PUBLISHER_H
+#endif  // SOMEIP_EVENTS_PUBLISHER_H

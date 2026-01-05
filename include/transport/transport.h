@@ -14,11 +14,12 @@
 #ifndef SOMEIP_TRANSPORT_TRANSPORT_H
 #define SOMEIP_TRANSPORT_TRANSPORT_H
 
-#include "transport/endpoint.h"
-#include "someip/message.h"
-#include "common/result.h"
-#include <memory>
 #include <functional>
+#include <memory>
+
+#include "common/result.h"
+#include "someip/message.h"
+#include "transport/endpoint.h"
 
 namespace someip {
 namespace transport {
@@ -30,7 +31,7 @@ namespace transport {
  * and incoming messages.
  */
 class ITransportListener {
-public:
+   public:
     virtual ~ITransportListener() = default;
 
     /**
@@ -66,7 +67,7 @@ public:
  * (UDP, TCP, etc.) in the SOME/IP stack.
  */
 class ITransport {
-public:
+   public:
     virtual ~ITransport() = default;
 
     /**
@@ -137,7 +138,7 @@ public:
 using ITransportPtr = std::shared_ptr<ITransport>;
 using ITransportListenerPtr = std::shared_ptr<ITransportListener>;
 
-} // namespace transport
-} // namespace someip
+}  // namespace transport
+}  // namespace someip
 
-#endif // SOMEIP_TRANSPORT_TRANSPORT_H
+#endif  // SOMEIP_TRANSPORT_TRANSPORT_H

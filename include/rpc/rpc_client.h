@@ -14,8 +14,9 @@
 #ifndef SOMEIP_RPC_CLIENT_H
 #define SOMEIP_RPC_CLIENT_H
 
-#include "rpc/rpc_types.h"
 #include <memory>
+
+#include "rpc/rpc_types.h"
 
 namespace someip {
 namespace rpc {
@@ -32,7 +33,7 @@ class RpcClientImpl;
  * Applications use this interface to invoke methods on remote SOME/IP services.
  */
 class RpcClient {
-public:
+   public:
     /**
      * @brief Constructor
      * @param client_id Unique client identifier
@@ -85,8 +86,7 @@ public:
      * @return Call handle for cancellation, or 0 on failure
      */
     RpcCallHandle call_method_async(uint16_t service_id, MethodId method_id,
-                                    const std::vector<uint8_t>& parameters,
-                                    RpcCallback callback,
+                                    const std::vector<uint8_t>& parameters, RpcCallback callback,
                                     const RpcTimeout& timeout = RpcTimeout());
 
     /**
@@ -118,11 +118,11 @@ public:
     };
     Statistics get_statistics() const;
 
-private:
+   private:
     std::unique_ptr<RpcClientImpl> impl_;
 };
 
-} // namespace rpc
-} // namespace someip
+}  // namespace rpc
+}  // namespace someip
 
-#endif // SOMEIP_RPC_CLIENT_H
+#endif  // SOMEIP_RPC_CLIENT_H

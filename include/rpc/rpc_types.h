@@ -14,11 +14,11 @@
 #ifndef SOMEIP_RPC_TYPES_H
 #define SOMEIP_RPC_TYPES_H
 
-#include <cstdint>
-#include <vector>
-#include <memory>
 #include <chrono>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <vector>
 
 namespace someip {
 namespace rpc {
@@ -50,8 +50,8 @@ using MethodId = uint16_t;
  * @brief Timeout configuration for RPC calls
  */
 struct RpcTimeout {
-    std::chrono::milliseconds request_timeout{1000};  // Default 1 second
-    std::chrono::milliseconds response_timeout{5000}; // Default 5 seconds
+    std::chrono::milliseconds request_timeout{1000};   // Default 1 second
+    std::chrono::milliseconds response_timeout{5000};  // Default 5 seconds
 };
 
 /**
@@ -66,7 +66,9 @@ struct RpcRequest {
     RpcTimeout timeout;
 
     RpcRequest(uint16_t svc_id, MethodId meth_id, uint16_t cli_id, uint16_t sess_id)
-        : service_id(svc_id), method_id(meth_id), client_id(cli_id), session_id(sess_id) {}
+        : service_id(svc_id), method_id(meth_id), client_id(cli_id), session_id(sess_id)
+    {
+    }
 };
 
 /**
@@ -81,7 +83,13 @@ struct RpcResponse {
     std::vector<uint8_t> return_values;
 
     RpcResponse(uint16_t svc_id, MethodId meth_id, uint16_t cli_id, uint16_t sess_id, RpcResult res)
-        : service_id(svc_id), method_id(meth_id), client_id(cli_id), session_id(sess_id), result(res) {}
+        : service_id(svc_id),
+          method_id(meth_id),
+          client_id(cli_id),
+          session_id(sess_id),
+          result(res)
+    {
+    }
 };
 
 /**
@@ -98,7 +106,7 @@ struct RpcSyncResult {
     std::chrono::milliseconds response_time{0};
 };
 
-} // namespace rpc
-} // namespace someip
+}  // namespace rpc
+}  // namespace someip
 
-#endif // SOMEIP_RPC_TYPES_H
+#endif  // SOMEIP_RPC_TYPES_H

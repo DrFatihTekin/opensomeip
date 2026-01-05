@@ -21,18 +21,17 @@
  * This is the most basic example showing core SOME/IP message exchange.
  */
 
-#include <iostream>
-#include <thread>
-#include <chrono>
 #include <atomic>
-#include <mutex>
+#include <chrono>
 #include <condition_variable>
 #include <cstdlib>
-#include <string>
-
-#include <transport/udp_transport.h>
-#include <transport/endpoint.h>
+#include <iostream>
+#include <mutex>
 #include <someip/message.h>
+#include <string>
+#include <thread>
+#include <transport/endpoint.h>
+#include <transport/udp_transport.h>
 
 using namespace someip;
 using namespace someip::transport;
@@ -49,36 +48,40 @@ bool response_received = false;
 std::string server_response;
 
 class HelloClient : public ITransportListener {
-public:
-    HelloClient()
-        : transport_(std::make_shared<UdpTransport>(Endpoint("0.0.0.0", 0))) {  // Client gets ephemeral port
+   public:
+    HelloClient() : transport_(std::make_shared<UdpTransport>(Endpoint("0.0.0.0", 0)))
+    {  // Client gets ephemeral port
         transport_->set_listener(this);
     }
 
-    ~HelloClient() {
+    ~HelloClient()
+    {
         stop();
     }
 
-    bool start() {
+    bool start()
+    {
         if (transport_->start() != Result::SUCCESS) {
             std::cerr << "Failed to start transport" << std::endl;
             return false;
         }
 
-        std::cout << "Hello World Client started on " << transport_->get_local_endpoint().to_string() << std::endl;
+        std::cout << "Hello World Client started on "
+                  << transport_->get_local_endpoint().to_string() << std::endl;
         return true;
     }
 
-    void stop() {
+    void stop()
+    {
         transport_->stop();
     }
 
-    void send_hello(const std::string& message, const std::string& host, uint16_t port) {
+    void send_hello(const std::string& message, const std::string& host, uint16_t port)
+    {
         // Create request message
         Message request(MessageId(HELLO_SERVICE_ID, SAY_HELLO_METHOD_ID),
-                       RequestId(0x1234, 0x5678),  // Fixed client/session IDs for simplicity
-                       MessageType::REQUEST,
-                       ReturnCode::E_OK);
+                        RequestId(0x1234, 0x5678),  // Fixed client/session IDs for simplicity
+                        MessageType::REQUEST, ReturnCode::E_OK);
 
         // Set payload
         request.set_payload(std::vector<uint8_t>(message.begin(), message.end()));
@@ -86,7 +89,8 @@ public:
         // Server endpoint
         Endpoint server_endpoint(host, port);
 
-        std::cout << "Sending message: '" << message << "' to " << server_endpoint.to_string() << std::endl;
+        std::cout << "Sending message: '" << message << "' to " << server_endpoint.to_string()
+                  << std::endl;
 
         // Send the message
         Result send_result = transport_->send_message(request, server_endpoint);
@@ -95,26 +99,27 @@ public:
         }
     }
 
-    void wait_for_response(int timeout_ms = 5000) {
+    void wait_for_response(int timeout_ms = 5000)
+    {
         std::unique_lock<std::mutex> lock(response_mutex);
         if (response_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-                                []{ return response_received; })) {
+                                 [] { return response_received; })) {
             std::cout << "Server responded: '" << server_response << "'" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Timeout waiting for server response" << std::endl;
         }
     }
 
     // ITransportListener implementation
-    void on_message_received(MessagePtr message, const Endpoint& sender) override {
+    void on_message_received(MessagePtr message, const Endpoint& sender) override
+    {
         std::cout << "Received message from " << sender.to_string() << std::endl;
         std::cout << "Message: " << message->to_string() << std::endl;
 
         // Check if this is a response to our request
         if (message->get_service_id() == HELLO_SERVICE_ID &&
-            message->get_method_id() == SAY_HELLO_METHOD_ID &&
-            message->is_response()) {
-
+            message->get_method_id() == SAY_HELLO_METHOD_ID && message->is_response()) {
             // Get the payload as string
             std::string response_text;
             if (!message->get_payload().empty()) {
@@ -131,23 +136,27 @@ public:
         }
     }
 
-    void on_connection_lost(const Endpoint& endpoint) override {
+    void on_connection_lost(const Endpoint& endpoint) override
+    {
         std::cout << "Connection lost to " << endpoint.to_string() << std::endl;
     }
 
-    void on_connection_established(const Endpoint& endpoint) override {
+    void on_connection_established(const Endpoint& endpoint) override
+    {
         std::cout << "Connection established to " << endpoint.to_string() << std::endl;
     }
 
-    void on_error(Result error) override {
+    void on_error(Result error) override
+    {
         std::cout << "Transport error: " << static_cast<int>(error) << std::endl;
     }
 
-private:
+   private:
     std::shared_ptr<UdpTransport> transport_;
 };
 
-int main() {
+int main()
+{
     std::cout << "=== SOME/IP Hello World Client ===" << std::endl;
     std::cout << std::endl;
 
@@ -168,7 +177,8 @@ int main() {
     uint16_t server_port = 30490;
     try {
         server_port = static_cast<uint16_t>(std::stoi(get_env("HELLO_SERVER_PORT", "30490")));
-    } catch (...) {
+    }
+    catch (...) {
         server_port = 30490;
     }
 

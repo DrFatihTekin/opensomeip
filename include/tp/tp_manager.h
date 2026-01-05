@@ -14,11 +14,12 @@
 #ifndef SOMEIP_TP_MANAGER_H
 #define SOMEIP_TP_MANAGER_H
 
-#include "tp_types.h"
-#include "../someip/message.h"
 #include <memory>
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
+
+#include "../someip/message.h"
+#include "tp_types.h"
 
 namespace someip {
 namespace tp {
@@ -36,7 +37,7 @@ class TpReassembler;
  * Integrates with the transport layer to provide transparent large message support.
  */
 class TpManager {
-public:
+   public:
     /**
      * @brief Constructor
      * @param config TP configuration
@@ -107,7 +108,8 @@ public:
      * @param segments_acknowledged List of segment offsets that were acknowledged
      * @return SUCCESS if acknowledgment processed
      */
-    TpResult acknowledge_segments(uint32_t transfer_id, const std::vector<uint16_t>& segments_acknowledged);
+    TpResult acknowledge_segments(uint32_t transfer_id,
+                                  const std::vector<uint16_t>& segments_acknowledged);
 
     /**
      * @brief Cancel an ongoing transfer
@@ -166,7 +168,7 @@ public:
      */
     void update_config(const TpConfig& config);
 
-private:
+   private:
     TpConfig config_;
     std::unique_ptr<TpSegmenter> segmenter_;
     std::unique_ptr<TpReassembler> reassembler_;
@@ -185,8 +187,7 @@ private:
     void update_statistics(const TpSegment& segment, bool sent);
 };
 
-} // namespace tp
-} // namespace someip
+}  // namespace tp
+}  // namespace someip
 
-#endif // SOMEIP_TP_MANAGER_H
-
+#endif  // SOMEIP_TP_MANAGER_H
