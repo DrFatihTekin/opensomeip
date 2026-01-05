@@ -51,9 +51,9 @@ perf-test: build
 	./scripts/performance_test.sh
 
 # Code formatting
-format:
+format: build
 	@echo "Formatting code..."
-	./scripts/format.sh
+	cd build && make format
 
 # Static analysis
 analyze:
