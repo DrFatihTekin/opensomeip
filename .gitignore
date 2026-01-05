@@ -95,3 +95,4 @@ docs/diagrams/svg/
 .git/
 *.patch
 *.diff
+CTestCostData.txt
